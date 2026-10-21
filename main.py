@@ -32,12 +32,13 @@ except Exception:
     UPDATER_AVAILABLE = False
     def check_for_updates(manual=False): pass
 
-# Цветовая палитра
-COLOR_BG = get_color_from_hex('#16251B')      # Темно-зеленый фон
-COLOR_GOLD = get_color_from_hex('#D4AF37')    # Золотой
-COLOR_RED = get_color_from_hex('#8B2525')     # Темно-красный
-COLOR_TEXT = (0.9, 0.9, 0.9, 1)               # Светлый текст
-COLOR_ORANGE = get_color_from_hex('#E67E22')  # Оранжевый
+# --- ЦВЕТОВАЯ ПАЛИТРА ---
+COLOR_BG = get_color_from_hex('#16251B')        # Темно-зеленый фон
+COLOR_BTN_BG = get_color_from_hex('#1E3024')    # Фон кнопок (чуть светлее)
+COLOR_GOLD = get_color_from_hex('#D4AF37')      # Золотой
+COLOR_RED = get_color_from_hex('#8B2525')       # Темно-красный
+COLOR_TEXT = (0.95, 0.95, 0.95, 1)              # Светлый текст
+COLOR_ORANGE = get_color_from_hex('#E67E22')    # Оранжевый для прогресса
 
 Window.clearcolor = COLOR_BG
 
@@ -50,47 +51,45 @@ def _fact_label(fact, length=60):
 
 
 def make_header(title_text, back_callback, height=dp(50)):
-    """Хедер с центрированным заголовком и кнопкой назад слева."""
     header = FloatLayout(size_hint=(1, None), height=height)
-
     title = Label(
         text=title_text, font_size='20sp', color=COLOR_GOLD, bold=True,
         size_hint=(1, 1), pos_hint={'x': 0, 'y': 0},
         halign='center', valign='middle', text_size=(Window.width - dp(30), None)
     )
     header.add_widget(title)
-
     back_btn = Button(
         text="<--", size_hint=(0.15, 1), pos_hint={'x': 0, 'y': 0},
         background_color=(0.2, 0.2, 0.2, 0.5), color=COLOR_GOLD, font_size='16sp'
     )
     back_btn.bind(on_release=back_callback)
     header.add_widget(back_btn)
-
     return header
 
 
-class RoundedButton(Button):
-    """Кнопка со скругленными углами и золотой рамкой."""
+class StyledButton(Button):
+    """Кнопка с темным фоном, золотой рамкой и скруглениями."""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.background_normal = ''
-        self.background_color = (0, 0, 0, 0) # Прозрачный стандартный фон
+        self.background_color = (0, 0, 0, 0) 
         self.color = COLOR_GOLD
         self.bold = True
+        self.font_name = "Roboto" # Стандартный шрифт
         
         with self.canvas.before:
-            Color(0.1, 0.15, 0.12, 1) # Темный фон
+            Color(*COLOR_BTN_BG)
             self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(8)])
             Color(*COLOR_GOLD)
-            self.line = Line(rounded_rectangle=(self.x, self.y, self.width, self.height, dp(8)), width=1.5)
+            # Рисуем двойную рамку (внешнюю)
+            self.line_outer = Line(rounded_rectangle=(self.x, self.y, self.width, self.height, dp(8)), width=2)
             
         self.bind(pos=self.update_graphics, size=self.update_graphics)
         
     def update_graphics(self, instance, value):
         self.rect.pos = instance.pos
         self.rect.size = instance.size
-        self.line.rounded_rectangle = (instance.x, instance.y, instance.width, instance.height, dp(8))
+        self.line_outer.rounded_rectangle = (instance.x, instance.y, instance.width, instance.height, dp(8))
 
 
 class FactCard(ButtonBehavior, BoxLayout):
@@ -98,7 +97,7 @@ class FactCard(ButtonBehavior, BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.orientation = 'vertical'
-        self.padding = [dp(10), dp(15)]
+        self.padding = [dp(15), dp(10)]
         self.spacing = dp(5)
         
         with self.canvas.before:
@@ -109,39 +108,41 @@ class FactCard(ButtonBehavior, BoxLayout):
             
         self.bind(pos=self.update_graphics, size=self.update_graphics)
 
-        # Содержимое карточки
-        self.add_widget(Label(text="⭐", font_size='24sp', color=COLOR_GOLD, size_hint=(1, None), height=dp(30)))
-        self.add_widget(Label(text="ФАКТ ДНЯ", font_size='18sp', color=COLOR_GOLD, bold=True, size_hint=(1, None), height=dp(25)))
+        # Заголовок карточки
+        self.add_widget(Label(text="★", font_size='28sp', color=COLOR_GOLD, size_hint=(1, 0.2)))
+        self.add_widget(Label(text="ФАКТ ДНЯ", font_size='18sp', color=COLOR_GOLD, bold=True, size_hint=(1, 0.2)))
         
-        # Нижняя часть карточки (Фото слева, Текст справа)
-        bottom_box = BoxLayout(orientation='horizontal', spacing=dp(10), size_hint=(1, 1))
+        # Нижняя часть (Фото слева, Текст справа)
+        bottom_box = BoxLayout(orientation='horizontal', spacing=dp(15), size_hint=(1, 0.6))
         
-        # Место под фото (слева)
-        photo_layout = FloatLayout(size_hint=(0.35, 1))
+        # Левая часть - Круг под фото
+        photo_layout = FloatLayout(size_hint=(0.3, 1))
         with photo_layout.canvas:
-            Color(*COLOR_BG)
-            self.inner_circle = Ellipse(pos=photo_layout.pos, size=(dp(50), dp(50)))
+            Color(*COLOR_BG) # Темный фон круга
+            self.inner_circle = Ellipse(pos=photo_layout.pos, size=(dp(60), dp(60)))
             Color(*COLOR_GOLD)
-            self.outer_circle = Line(circle=(0, 0, dp(25)), width=1.5)
+            self.outer_circle = Line(circle=(0, 0, dp(31)), width=2)
             
-        # Привязка кругов к центру левой части
         def update_photo(instance, value):
             cx = instance.x + instance.width / 2
             cy = instance.y + instance.height / 2
-            self.inner_circle.pos = (cx - dp(25), cy - dp(25))
-            self.inner_circle.size = (dp(50), dp(50))
-            self.outer_circle.circle = (cx, cy, dp(25))
+            self.inner_circle.pos = (cx - dp(30), cy - dp(30))
+            self.inner_circle.size = (dp(60), dp(60))
+            self.outer_circle.circle = (cx, cy, dp(31))
             
         photo_layout.bind(pos=update_photo, size=update_photo)
         photo_layout.add_widget(Label(text="ФОТО", font_size='10sp', color=COLOR_GOLD, pos_hint={'center_x':0.5, 'center_y':0.5}))
         
-        # Текст (справа)
-        text_layout = BoxLayout(orientation='vertical', size_hint=(0.65, 1))
-        text_layout.add_widget(Label(text="Портрет героя\nи краткий подвиг", font_size='13sp', color=COLOR_TEXT, halign='left', valign='middle', text_size=(dp(150), None)))
+        # Правая часть - Текст
+        text_layout = BoxLayout(orientation='vertical', size_hint=(0.7, 1))
+        text_layout.add_widget(Label(
+            text="Портрет героя\nи краткий подвиг", 
+            font_size='14sp', color=COLOR_TEXT, 
+            halign='left', valign='middle', text_size=(dp(200), None)
+        ))
         
         bottom_box.add_widget(photo_layout)
         bottom_box.add_widget(text_layout)
-        
         self.add_widget(bottom_box)
 
     def update_graphics(self, instance, value):
@@ -174,10 +175,10 @@ class MainMenuScreen(Screen):
         layout = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
 
         # 1. Шапка
-        header = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(90))
+        header = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(100))
         header.add_widget(Label(text="НИКТО НЕ ЗАБЫТ", font_size='12sp', color=COLOR_GOLD, bold=True))
-        header.add_widget(Label(text="ГЕРОИ БЕЛАРУСИ", font_size='24sp', color=COLOR_GOLD, bold=True))
-        header.add_widget(Label(text="Партизаны, лётчики, подпольщики", font_size='12sp', color=COLOR_TEXT))
+        header.add_widget(Label(text="ГЕРОИ БЕЛАРУСИ", font_size='26sp', color=COLOR_GOLD, bold=True))
+        header.add_widget(Label(text="Партизаны, лётчики, подпольщики", font_size='13sp', color=COLOR_TEXT))
         layout.add_widget(header)
 
         # 2. Прогресс
@@ -186,30 +187,30 @@ class MainMenuScreen(Screen):
         progress = self.user_prefs.get_total_progress(total_facts)
         streak = self.user_prefs.get_streak_days()
 
-        prog_box = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(40), spacing=dp(5))
+        prog_box = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(50), spacing=dp(5))
         
         prog_labels = BoxLayout(size_hint=(1, None), height=dp(20))
-        prog_labels.add_widget(Label(text=f"Прогресс: {viewed}/{total_facts}", font_size='12sp', color=COLOR_TEXT, halign='left'))
-        prog_labels.add_widget(Label(text=f"Серия: {streak} дн.", font_size='12sp', color=COLOR_ORANGE, halign='right'))
+        prog_labels.add_widget(Label(text=f"Прогресс: {viewed}/{total_facts}", font_size='13sp', color=COLOR_TEXT, halign='left'))
+        prog_labels.add_widget(Label(text=f"Серия: {streak} дн.", font_size='13sp', color=COLOR_ORANGE, halign='right'))
         
         prog_box.add_widget(prog_labels)
         
         # Прогресс-бар
-        pbar_layout = FloatLayout(size_hint=(1, None), height=dp(15))
+        pbar_layout = FloatLayout(size_hint=(1, None), height=dp(12))
         with pbar_layout.canvas:
             Color(0.2, 0.2, 0.2, 1)
-            bg_rect = RoundedRectangle(pos=pbar_layout.pos, size=pbar_layout.size, radius=[dp(2)])
+            bg_rect = RoundedRectangle(pos=pbar_layout.pos, size=pbar_layout.size, radius=[dp(6)])
             Color(*COLOR_ORANGE)
-            fill_rect = RoundedRectangle(pos=pbar_layout.pos, size=(pbar_layout.width * (progress/100), pbar_layout.height), radius=[dp(2)])
+            fill_rect = RoundedRectangle(pos=pbar_layout.pos, size=(pbar_layout.width * (progress/100), pbar_layout.height), radius=[dp(6)])
             Color(*COLOR_GOLD)
-            line_rect = Line(rounded_rectangle=(pbar_layout.x, pbar_layout.y, pbar_layout.width, pbar_layout.height, dp(2)), width=1)
+            line_rect = Line(rounded_rectangle=(pbar_layout.x, pbar_layout.y, pbar_layout.width, pbar_layout.height, dp(6)), width=1)
             
         def update_pbar(instance, value):
             bg_rect.pos = instance.pos
             bg_rect.size = instance.size
             fill_rect.pos = instance.pos
             fill_rect.size = (instance.width * (progress/100), instance.height)
-            line_rect.rounded_rectangle = (instance.x, instance.y, instance.width, instance.height, dp(2))
+            line_rect.rounded_rectangle = (instance.x, instance.y, instance.width, instance.height, dp(6))
             
         pbar_layout.bind(pos=update_pbar, size=update_pbar)
         prog_box.add_widget(pbar_layout)
@@ -220,30 +221,33 @@ class MainMenuScreen(Screen):
         self.fact_card.bind(on_release=self.go_to_fact_of_day)
         layout.add_widget(self.fact_card)
 
+        # Добавляем гибкий отступ, чтобы прижать кнопки к низу, если экран большой
+        layout.add_widget(BoxLayout(size_hint=(1, 0.1)))
+
         # 4. Сетка кнопок
-        grid = GridLayout(cols=2, spacing=dp(10), size_hint=(1, None), height=dp(160))
+        # Увеличиваем высоту сетки и расстояние, чтобы они выглядели крупнее
+        grid = GridLayout(cols=2, spacing=dp(12), size_hint=(1, None), height=dp(220))
         
-        # Кнопки со скругленными углами
-        btn_history = RoundedButton(text="История", font_size='14sp')
+        btn_history = StyledButton(text="История", font_size='16sp')
         btn_history.bind(on_release=self.go_to_history)
         grid.add_widget(btn_history)
 
-        btn_notes = RoundedButton(text="Заметки", font_size='14sp')
+        btn_notes = StyledButton(text="Заметки", font_size='16sp')
         btn_notes.bind(on_release=self.go_to_notes)
         grid.add_widget(btn_notes)
 
-        btn_stats = RoundedButton(text="Статистика", font_size='14sp')
+        btn_stats = StyledButton(text="Статистика", font_size='16sp')
         btn_stats.bind(on_release=self.go_to_stats)
         grid.add_widget(btn_stats)
 
-        btn_settings = RoundedButton(text="Настройки", font_size='14sp')
+        btn_settings = StyledButton(text="Настройки", font_size='16sp')
         btn_settings.bind(on_release=self.go_to_settings)
         grid.add_widget(btn_settings)
 
         layout.add_widget(grid)
         
-        # Пустое место снизу, чтобы все прижалось к верху
-        layout.add_widget(BoxLayout(size_hint=(1, 1)))
+        # Ещё один отступ снизу
+        layout.add_widget(BoxLayout(size_hint=(1, 0.1)))
 
         self.add_widget(layout)
 
@@ -289,12 +293,12 @@ class FactScreen(Screen):
         back_btn.bind(on_release=self.go_back)
         top_panel.add_widget(back_btn)
 
-        self.ext_btn = RoundedButton(text="[i] Подробнее", size_hint=(0.85, 1), font_size='14sp')
+        self.ext_btn = StyledButton(text="[i] Подробнее", size_hint=(0.85, 1), font_size='14sp')
         self.ext_btn.bind(on_release=self.toggle_extended)
         top_panel.add_widget(self.ext_btn)
         layout.add_widget(top_panel)
 
-        # Круглая заглушка для фото (ИСПРАВЛЕНО: теперь рисуется четко по центру)
+        # Круглая заглушка для фото
         photo_container = FloatLayout(size_hint=(1, None), height=dp(140))
         with photo_container.canvas:
             Color(*COLOR_GOLD)
@@ -344,16 +348,16 @@ class FactScreen(Screen):
         # Кнопки действий
         action_row = BoxLayout(size_hint=(1, None), height=dp(50), spacing=dp(8))
 
-        self.like_btn = RoundedButton(text="[+]", font_size='20sp')
+        self.like_btn = StyledButton(text="[+]", font_size='20sp')
         self.like_btn.bind(on_release=self.toggle_like)
         
-        self.dislike_btn = RoundedButton(text="[-]", font_size='20sp')
+        self.dislike_btn = StyledButton(text="[-]", font_size='20sp')
         self.dislike_btn.bind(on_release=self.toggle_dislike)
         
-        self.note_btn = RoundedButton(text="[N]", font_size='20sp')
+        self.note_btn = StyledButton(text="[N]", font_size='20sp')
         self.note_btn.bind(on_release=self.open_note_popup)
         
-        next_btn = RoundedButton(text="[>]", font_size='20sp')
+        next_btn = StyledButton(text="[>]", font_size='20sp')
         next_btn.bind(on_release=self.next_fact)
 
         action_row.add_widget(self.like_btn)
@@ -427,12 +431,13 @@ class FactScreen(Screen):
         content = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(8))
         content.add_widget(Label(text="ЗАМЕТКА", font_size='18sp', color=COLOR_GOLD, bold=True))
         text_input = TextInput(text=existing_note, hint_text="Введите текст...", multiline=True,
-                               background_color=(0.1, 0.15, 0.12, 1), foreground_color=COLOR_TEXT)
+                               background_color=COLOR_BTN_BG, foreground_color=COLOR_TEXT)
         content.add_widget(text_input)
 
         btn_row = BoxLayout(size_hint=(1, None), height=dp(40), spacing=dp(8))
-        cancel_btn = Button(text="Отмена", background_color=(0.3, 0.3, 0.3, 0.8), color=COLOR_TEXT)
-        save_btn = Button(text="Сохранить", background_color=COLOR_RED, color=COLOR_GOLD)
+        cancel_btn = StyledButton(text="Отмена")
+        save_btn = StyledButton(text="Сохранить")
+        save_btn.color = COLOR_RED # Выделяем кнопку сохранения
 
         btn_row.add_widget(cancel_btn)
         btn_row.add_widget(save_btn)
@@ -531,7 +536,7 @@ class HistoryScreen(Screen):
         for fact_id in reversed(liked):
             fact = get_fact_by_id(fact_id)
             if fact:
-                btn = RoundedButton(text=f"[★] {_fact_label(fact, 40)}", font_size='14sp')
+                btn = StyledButton(text=f"[★] {_fact_label(fact, 40)}", font_size='14sp')
                 btn.size_hint = (1, None)
                 btn.height = dp(50)
                 btn.bind(on_release=lambda x, f=fact: self.view_fact(f))
@@ -542,8 +547,8 @@ class HistoryScreen(Screen):
         for fact_id in reversed(not_liked):
             fact = get_fact_by_id(fact_id)
             if fact:
-                btn = RoundedButton(text=f"[i] {_fact_label(fact, 40)}", font_size='14sp')
-                btn.color = COLOR_TEXT # Для изученных текст белый
+                btn = StyledButton(text=f"[i] {_fact_label(fact, 40)}", font_size='14sp')
+                btn.color = COLOR_TEXT
                 btn.size_hint = (1, None)
                 btn.height = dp(50)
                 btn.bind(on_release=lambda x, f=fact: self.view_fact(f))
@@ -584,7 +589,7 @@ class NotesScreen(Screen):
             for fact_id_str, text in all_notes.items():
                 fact = get_fact_by_id(int(fact_id_str))
                 if fact:
-                    btn = RoundedButton(text=f"[N] {_fact_label(fact, 30)}\n\n{text[:80]}...", font_size='13sp')
+                    btn = StyledButton(text=f"[N] {_fact_label(fact, 30)}\n\n{text[:80]}...", font_size='13sp')
                     btn.size_hint = (1, None)
                     btn.height = dp(90)
                     btn.bind(on_release=lambda x, f=fact: self.view_fact(f))
@@ -663,28 +668,26 @@ class SettingsScreen(Screen):
 
         layout.add_widget(Label(text=f"Версия: {__version__}", font_size='14sp', color=COLOR_TEXT))
 
-        btn_clear = RoundedButton(text="ОЧИСТИТЬ ИСТОРИЮ", font_size='14sp')
-        btn_clear.background_color = (0.6, 0.2, 0.2, 0.9)
+        btn_clear = StyledButton(text="ОЧИСТИТЬ ИСТОРИЮ", font_size='14sp')
         btn_clear.size_hint = (1, None)
         btn_clear.height = dp(50)
         btn_clear.bind(on_release=self.clear_history)
         layout.add_widget(btn_clear)
 
-        btn_reset = RoundedButton(text="СБРОСИТЬ ВСЁ", font_size='14sp')
-        btn_reset.background_color = (0.4, 0.1, 0.1, 0.8)
+        btn_reset = StyledButton(text="СБРОСИТЬ ВСЁ", font_size='14sp')
         btn_reset.size_hint = (1, None)
         btn_reset.height = dp(50)
         btn_reset.bind(on_release=self.reset_all)
         layout.add_widget(btn_reset)
 
         if UPDATER_AVAILABLE:
-            btn_update = RoundedButton(text="ПРОВЕРИТЬ ОБНОВЛЕНИЯ", font_size='14sp')
+            btn_update = StyledButton(text="ПРОВЕРИТЬ ОБНОВЛЕНИЯ", font_size='14sp')
             btn_update.size_hint = (1, None)
             btn_update.height = dp(50)
             btn_update.bind(on_release=lambda x: check_for_updates(manual=True))
             layout.add_widget(btn_update)
 
-        layout.add_widget(BoxLayout(size_hint=(1, 1))) # Отступ снизу
+        layout.add_widget(BoxLayout(size_hint=(1, 1)))
         self.add_widget(layout)
 
     def clear_history(self, instance):
