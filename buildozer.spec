@@ -1,26 +1,28 @@
 [app]
-title = Факты о ВОВ
-package.name = warfacts
-package.domain = org.example
+title = Герои Беларуси
+package.name = belarusheroes
+package.domain = org.belarusheroes
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,txt,json
 version = 1.0.0
-requirements = python3,kivy==2.1.0,setuptools,wheel
+
+requirements = hostpython3==3.10.12,python3==3.10.12,kivy,requests,urllib3,certifi,charset-normalizer,idna
+
 orientation = portrait
-fullscreen = 0
-android.permissions = INTERNET
-android.minapi = 21
+fullscreen = 1
+
+android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.api = 33
-android.ndk = 28c
-android.ndk_api = 21
-android.archs = arm64-v8a, armeabi-v7a
+android.minapi = 24
+android.ndk = 25b
+android.ndk_api = 24
+android.archs = arm64-v8a
 android.graphics_api = gl
-android.allow_backup = True
 android.accept_sdk_license = True
-android.enable_androidx = True
-android.copy_libs = 1
+android.allow_backup = True
 android.debug_artifact = apk
+android.manifest.orientation = portrait
 
 [buildozer]
 log_level = 2
-warn_on_root = 1
+warn_on_root = 0
