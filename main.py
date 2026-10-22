@@ -165,14 +165,12 @@ class MainMenuScreen(Screen):
     def build_ui(self):
         layout = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
 
-        # 1. Шапка
         header = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(100))
         header.add_widget(Label(text="НИКТО НЕ ЗАБЫТ", font_size='12sp', color=COLOR_GOLD, bold=True))
         header.add_widget(Label(text="ГЕРОИ БЕЛАРУСИ", font_size='26sp', color=COLOR_GOLD, bold=True))
         header.add_widget(Label(text="Партизаны, лётчики, подпольщики", font_size='13sp', color=COLOR_TEXT))
         layout.add_widget(header)
 
-        # 2. Прогресс
         total_facts = get_facts_count()
         viewed = len(self.user_prefs.data["viewed_facts"])
         progress = self.user_prefs.get_total_progress(total_facts)
@@ -206,14 +204,12 @@ class MainMenuScreen(Screen):
         prog_box.add_widget(pbar_layout)
         layout.add_widget(prog_box)
 
-        # 3. Карточка "Факт дня"
         self.fact_card = FactCard(size_hint=(1, None), height=dp(180))
         self.fact_card.bind(on_release=self.go_to_fact_of_day)
         layout.add_widget(self.fact_card)
 
         layout.add_widget(BoxLayout(size_hint=(1, 0.1)))
 
-        # 4. Сетка кнопок
         grid = GridLayout(cols=2, spacing=dp(12), size_hint=(1, None), height=dp(220))
         
         btn_history = StyledButton(text="История", font_size='16sp')
@@ -259,7 +255,7 @@ class MainMenuScreen(Screen):
 
 
 # ============================================================
-#  ЭКРАН ФАКТА (ПОЛНОСТЬЮ ПЕРЕПИСАН)
+#  ЭКРАН ФАКТА (КРАСИВЫЙ И УДОБНЫЙ)
 # ============================================================
 
 class FactScreen(Screen):
@@ -271,115 +267,123 @@ class FactScreen(Screen):
         self.build_ui()
 
     def build_ui(self):
-        # Основной контейнер
-        layout = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(10))
+        # Главный контейнер (делим на 3 части: верх, середина, низ)
+        main_layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(10)], spacing=dp(10))
 
-        # 1. Верхняя панель (фиксированная, не скроллится)
+        # 1. ВЕРХНЯЯ ПАНЕЛЬ (фиксирована)
         top_panel = BoxLayout(size_hint=(1, None), height=dp(45), spacing=dp(8))
         back_btn = Button(text="<--", size_hint=(0.15, 1), background_color=(0.2, 0.2, 0.2, 0.5), color=COLOR_GOLD)
         back_btn.bind(on_release=self.go_back)
         top_panel.add_widget(back_btn)
 
-        self.ext_btn = StyledButton(text="[i] Подробнее", size_hint=(0.85, 1), font_size='14sp')
+        self.ext_btn = StyledButton(text="[i] Подробнее", size_hint=(0.85, 1), font_size='15sp')
         self.ext_btn.bind(on_release=self.toggle_extended)
         top_panel.add_widget(self.ext_btn)
-        layout.add_widget(top_panel)
+        main_layout.add_widget(top_panel)
 
-        # 2. Основной контент в ScrollView (чтобы ничего не сплющивалось)
-        main_scroll = ScrollView(size_hint=(1, 1), bar_width=dp(4))
-        content_layout = BoxLayout(orientation='vertical', size_hint_y=None, spacing=dp(15))
-        content_layout.bind(minimum_height=content_layout.setter('height'))
+        # 2. СЕРЕДИНА (прокручиваемая часть)
+        self.scroll = ScrollView(size_hint=(1, 1), bar_width=dp(3))
+        content_box = BoxLayout(orientation='vertical', size_hint_y=None, spacing=dp(15))
+        content_box.bind(minimum_height=content_box.setter('height'))
 
-        # Круглая заглушка для фото
-        photo_container = FloatLayout(size_hint=(1, None), height=dp(140))
+        # Фото-круг
+        photo_container = FloatLayout(size_hint=(1, None), height=dp(150))
         with photo_container.canvas:
             Color(*COLOR_GOLD)
-            self.outer_ellipse = Line(circle=(0, 0, dp(60)), width=2)
+            self.outer_ellipse = Line(circle=(0, 0, dp(65)), width=2)
             Color(*COLOR_BG)
-            self.inner_ellipse = Ellipse(pos=(0, 0), size=(dp(116), dp(116)))
+            self.inner_ellipse = Ellipse(pos=(0, 0), size=(dp(126), dp(126)))
             
         def draw_circle(instance, value):
             cx = instance.x + instance.width / 2
             cy = instance.y + instance.height / 2
-            self.outer_ellipse.circle = (cx, cy, dp(60))
-            self.inner_ellipse.pos = (cx - dp(58), cy - dp(58))
-            self.inner_ellipse.size = (dp(116), dp(116))
+            self.outer_ellipse.circle = (cx, cy, dp(65))
+            self.inner_ellipse.pos = (cx - dp(63), cy - dp(63))
+            self.inner_ellipse.size = (dp(126), dp(126))
             
         photo_container.bind(pos=draw_circle, size=draw_circle)
         
         self.photo_text = Label(text="ФОТО", font_size='16sp', color=COLOR_GOLD, pos_hint={'center_x':0.5, 'center_y':0.5})
         photo_container.add_widget(self.photo_text)
-        content_layout.add_widget(photo_container)
+        content_box.add_widget(photo_container)
 
-        # Текст факта
+        # Основной текст (УВЕЛИЧЕН)
         self.fact_text = Label(
-            text="", font_size='18sp', color=COLOR_TEXT,
+            text="", font_size='22sp', color=COLOR_TEXT, bold=True,
             halign='center', valign='top', size_hint_y=None
         )
-        # Привязываем ширину и высоту
         self.fact_text.bind(width=lambda instance, value: setattr(instance, 'text_size', (value, None)))
         self.fact_text.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1]))
-        content_layout.add_widget(self.fact_text)
+        content_box.add_widget(self.fact_text)
 
-        # Расширенная информация
+        # Расширенный текст (УВЕЛИЧЕН)
         self.ext_text = Label(
-            text="", font_size='14sp', color=(0.8, 0.8, 0.8, 1),
+            text="", font_size='16sp', color=(0.85, 0.85, 0.85, 1),
             halign='center', valign='top', size_hint_y=None
         )
         self.ext_text.bind(width=lambda instance, value: setattr(instance, 'text_size', (value, None)))
         self.ext_text.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1]))
         self.ext_text.opacity = 0
-        content_layout.add_widget(self.ext_text)
+        content_box.add_widget(self.ext_text)
 
         # Теги
         self.tags_label = Label(
-            text="", font_size='12sp', color=COLOR_GOLD, 
+            text="", font_size='14sp', color=COLOR_GOLD, 
             size_hint_y=None, height=dp(30), halign='center'
         )
-        content_layout.add_widget(self.tags_label)
+        content_box.add_widget(self.tags_label)
+        
+        # Пустое место, чтобы текст не прилипал к кнопкам, если он короткий
+        content_box.add_widget(BoxLayout(size_hint=(1, None), height=dp(20)))
 
+        self.scroll.add_widget(content_box)
+        main_layout.add_widget(self.scroll)
+
+        # 3. НИЖНЯЯ ПАНЕЛЬ (фиксирована, кнопки всегда внизу)
+        bottom_panel = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(90), spacing=dp(10))
+        
         # Кнопки действий
-        action_row = BoxLayout(size_hint=(1, None), height=dp(60), spacing=dp(8))
+        action_row = BoxLayout(size_hint=(1, None), height=dp(60), spacing=dp(10))
 
-        self.like_btn = StyledButton(text="[+]", font_size='20sp')
+        self.like_btn = StyledButton(text="[+]", font_size='24sp')
         self.like_btn.bind(on_release=self.toggle_like)
         
-        self.dislike_btn = StyledButton(text="[-]", font_size='20sp')
+        self.dislike_btn = StyledButton(text="[-]", font_size='24sp')
         self.dislike_btn.bind(on_release=self.toggle_dislike)
         
-        self.note_btn = StyledButton(text="[N]", font_size='20sp')
+        self.note_btn = StyledButton(text="[N]", font_size='24sp')
         self.note_btn.bind(on_release=self.open_note_popup)
         
-        next_btn = StyledButton(text="[>]", font_size='20sp')
+        next_btn = StyledButton(text="[>]", font_size='24sp')
         next_btn.bind(on_release=self.next_fact)
 
         action_row.add_widget(self.like_btn)
         action_row.add_widget(self.dislike_btn)
         action_row.add_widget(self.note_btn)
         action_row.add_widget(next_btn)
-        content_layout.add_widget(action_row)
+        bottom_panel.add_widget(action_row)
 
         # Статус
         self.status_label = Label(
-            text="", font_size='11sp', color=(0.5, 0.5, 0.5, 1), 
-            size_hint_y=None, height=dp(40), halign='center'
+            text="", font_size='12sp', color=(0.5, 0.5, 0.5, 1), 
+            size_hint_y=None, height=dp(20), halign='center'
         )
-        content_layout.add_widget(self.status_label)
+        bottom_panel.add_widget(self.status_label)
 
-        main_scroll.add_widget(content_layout)
-        layout.add_widget(main_scroll)
-
-        self.add_widget(layout)
+        main_layout.add_widget(bottom_panel)
+        self.add_widget(main_layout)
 
     def show_fact(self, fact):
         self.current_fact = fact
         self.showing_extended = False
         self.ext_text.opacity = 0
         self.ext_btn.text = "[i] Подробнее"
+        
+        # Прокручиваем наверх при смене факта
+        self.scroll.scroll_y = 1 
 
         self.photo_text.text = f"ФОТО\n{fact.get('title', '')}"
         self.fact_text.text = fact["text"]
-        # Принудительно обновляем размер текста
         self.fact_text.text_size = (self.fact_text.width, None)
 
         if "extended" in fact and fact["extended"]:
@@ -413,7 +417,6 @@ class FactScreen(Screen):
         if self.showing_extended:
             self.ext_text.opacity = 1
             self.ext_btn.text = "[i] Скрыть"
-            # Пересчитываем высоту
             self.ext_text.text_size = (self.ext_text.width, None)
             Animation(opacity=1, duration=0.3).start(self.ext_text)
         else:
@@ -452,17 +455,49 @@ class FactScreen(Screen):
         popup.open()
 
     def update_buttons(self, status):
-        self.like_btn.color = COLOR_GOLD
-        self.dislike_btn.color = COLOR_GOLD
+        # Сброс в стандартный вид
         self.like_btn.text = "[+]"
-        self.dislike_btn.text = "[-]"
+        self.like_btn.color = COLOR_GOLD
+        self.like_btn.canvas.before.clear()
+        with self.like_btn.canvas.before:
+            Color(*COLOR_BTN_BG)
+            self.like_btn.rect = RoundedRectangle(pos=self.like_btn.pos, size=self.like_btn.size, radius=[dp(8)])
+            Color(*COLOR_GOLD)
+            self.like_btn.line_outer = Line(rounded_rectangle=(self.like_btn.x, self.like_btn.y, self.like_btn.width, self.like_btn.height, dp(8)), width=2)
 
+        self.dislike_btn.text = "[-]"
+        self.dislike_btn.color = COLOR_GOLD
+        self.dislike_btn.canvas.before.clear()
+        with self.dislike_btn.canvas.before:
+            Color(*COLOR_BTN_BG)
+            self.dislike_btn.rect = RoundedRectangle(pos=self.dislike_btn.pos, size=self.dislike_btn.size, radius=[dp(8)])
+            Color(*COLOR_GOLD)
+            self.dislike_btn.line_outer = Line(rounded_rectangle=(self.dislike_btn.x, self.dislike_btn.y, self.dislike_btn.width, self.dislike_btn.height, dp(8)), width=2)
+
+        # Изменение цвета при клике
         if status == "liked":
-            self.like_btn.color = (0.2, 0.8, 0.2, 1)
             self.like_btn.text = "[★]"
+            self.like_btn.color = COLOR_BG # Темный текст
+            self.like_btn.canvas.before.clear()
+            with self.like_btn.canvas.before:
+                Color(*COLOR_GOLD) # Золотой фон
+                self.like_btn.rect = RoundedRectangle(pos=self.like_btn.pos, size=self.like_btn.size, radius=[dp(8)])
+                Color(*COLOR_GOLD)
+                self.like_btn.line_outer = Line(rounded_rectangle=(self.like_btn.x, self.like_btn.y, self.like_btn.width, self.like_btn.height, dp(8)), width=2)
+
         elif status == "disliked":
-            self.dislike_btn.color = (0.8, 0.2, 0.2, 1)
             self.dislike_btn.text = "[✖]"
+            self.dislike_btn.color = (1, 1, 1, 1) # Белый текст
+            self.dislike_btn.canvas.before.clear()
+            with self.dislike_btn.canvas.before:
+                Color(*COLOR_RED) # Красный фон
+                self.dislike_btn.rect = RoundedRectangle(pos=self.dislike_btn.pos, size=self.dislike_btn.size, radius=[dp(8)])
+                Color(*COLOR_GOLD)
+                self.dislike_btn.line_outer = Line(rounded_rectangle=(self.dislike_btn.x, self.dislike_btn.y, self.dislike_btn.width, self.dislike_btn.height, dp(8)), width=2)
+
+        # Перепривязываем события ресайза
+        self.like_btn.bind(pos=self.like_btn.update_graphics, size=self.like_btn.update_graphics)
+        self.dislike_btn.bind(pos=self.dislike_btn.update_graphics, size=self.dislike_btn.update_graphics)
 
     def toggle_like(self, instance):
         if not self.current_fact: return
@@ -529,25 +564,25 @@ class HistoryScreen(Screen):
         viewed = self.user_prefs.data["viewed_facts"]
         not_liked = [fid for fid in viewed if fid not in liked]
 
-        content.add_widget(Label(text=f"★ ПОНРАВИВШИЕСЯ ({len(liked)})", font_size='15sp', color=COLOR_GOLD, size_hint=(1, None), height=dp(40)))
+        content.add_widget(Label(text=f"★ ПОНРАВИВШИЕСЯ ({len(liked)})", font_size='16sp', color=COLOR_GOLD, size_hint=(1, None), height=dp(40)))
         for fact_id in reversed(liked):
             fact = get_fact_by_id(fact_id)
             if fact:
-                btn = StyledButton(text=f"[★] {_fact_label(fact, 40)}", font_size='14sp')
+                btn = StyledButton(text=f"[★] {_fact_label(fact, 40)}", font_size='15sp')
                 btn.size_hint = (1, None)
-                btn.height = dp(50)
+                btn.height = dp(55)
                 btn.bind(on_release=lambda x, f=fact: self.view_fact(f))
                 content.add_widget(btn)
 
         content.add_widget(Label(text="", size_hint=(1, None), height=dp(10)))
-        content.add_widget(Label(text=f"▸ ИЗУЧЕННЫЕ ({len(not_liked)})", font_size='15sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(40)))
+        content.add_widget(Label(text=f"▸ ИЗУЧЕННЫЕ ({len(not_liked)})", font_size='16sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(40)))
         for fact_id in reversed(not_liked):
             fact = get_fact_by_id(fact_id)
             if fact:
-                btn = StyledButton(text=f"[i] {_fact_label(fact, 40)}", font_size='14sp')
+                btn = StyledButton(text=f"[i] {_fact_label(fact, 40)}", font_size='15sp')
                 btn.color = COLOR_TEXT
                 btn.size_hint = (1, None)
-                btn.height = dp(50)
+                btn.height = dp(55)
                 btn.bind(on_release=lambda x, f=fact: self.view_fact(f))
                 content.add_widget(btn)
 
@@ -586,9 +621,9 @@ class NotesScreen(Screen):
             for fact_id_str, text in all_notes.items():
                 fact = get_fact_by_id(int(fact_id_str))
                 if fact:
-                    btn = StyledButton(text=f"[N] {_fact_label(fact, 30)}\n\n{text[:80]}...", font_size='13sp')
+                    btn = StyledButton(text=f"[N] {_fact_label(fact, 30)}\n\n{text[:80]}...", font_size='14sp')
                     btn.size_hint = (1, None)
-                    btn.height = dp(90)
+                    btn.height = dp(100)
                     btn.bind(on_release=lambda x, f=fact: self.view_fact(f))
                     notes_box.add_widget(btn)
         else:
@@ -628,15 +663,15 @@ class StatsScreen(Screen):
         total_facts = get_facts_count()
         progress = self.user_prefs.get_total_progress(total_facts)
 
-        content.add_widget(Label(text="[ ОБЩИЙ ПРОГРЕСС ]", font_size='16sp', color=COLOR_GOLD, size_hint=(1, None), height=dp(40)))
-        content.add_widget(Label(text=f"Изучено: {stats['unique_facts_viewed']} / {total_facts}", font_size='14sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(30)))
-        content.add_widget(Label(text=f"Прогресс: {progress}%", font_size='14sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(30)))
+        content.add_widget(Label(text="[ ОБЩИЙ ПРОГРЕСС ]", font_size='18sp', color=COLOR_GOLD, size_hint=(1, None), height=dp(40)))
+        content.add_widget(Label(text=f"Изучено: {stats['unique_facts_viewed']} / {total_facts}", font_size='15sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(30)))
+        content.add_widget(Label(text=f"Прогресс: {progress}%", font_size='15sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(30)))
 
-        content.add_widget(Label(text="[ ДОСТИЖЕНИЯ ]", font_size='16sp', color=COLOR_GOLD, size_hint=(1, None), height=dp(40)))
+        content.add_widget(Label(text="[ ДОСТИЖЕНИЯ ]", font_size='18sp', color=COLOR_GOLD, size_hint=(1, None), height=dp(40)))
         achievements = self.user_prefs.get_achievement_progress()
         if achievements:
             for ach in achievements:
-                content.add_widget(Label(text=f"[+] {ach['name']} — {ach['desc']}", font_size='13sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(30)))
+                content.add_widget(Label(text=f"[+] {ach['name']} — {ach['desc']}", font_size='14sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(30)))
         else:
             content.add_widget(Label(text="Читайте факты, чтобы получать достижения!", font_size='14sp', color=(0.5, 0.5, 0.5, 1)))
 
@@ -663,22 +698,22 @@ class SettingsScreen(Screen):
         layout = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
         layout.add_widget(make_header("Настройки", self.go_back))
 
-        layout.add_widget(Label(text=f"Версия: {__version__}", font_size='14sp', color=COLOR_TEXT))
+        layout.add_widget(Label(text=f"Версия: {__version__}", font_size='15sp', color=COLOR_TEXT))
 
-        btn_clear = StyledButton(text="ОЧИСТИТЬ ИСТОРИЮ", font_size='14sp')
+        btn_clear = StyledButton(text="ОЧИСТИТЬ ИСТОРИЮ", font_size='15sp')
         btn_clear.size_hint = (1, None)
         btn_clear.height = dp(50)
         btn_clear.bind(on_release=self.clear_history)
         layout.add_widget(btn_clear)
 
-        btn_reset = StyledButton(text="СБРОСИТЬ ВСЁ", font_size='14sp')
+        btn_reset = StyledButton(text="СБРОСИТЬ ВСЁ", font_size='15sp')
         btn_reset.size_hint = (1, None)
         btn_reset.height = dp(50)
         btn_reset.bind(on_release=self.reset_all)
         layout.add_widget(btn_reset)
 
         if UPDATER_AVAILABLE:
-            btn_update = StyledButton(text="ПРОВЕРИТЬ ОБНОВЛЕНИЯ", font_size='14sp')
+            btn_update = StyledButton(text="ПРОВЕРИТЬ ОБНОВЛЕНИЯ", font_size='15sp')
             btn_update.size_hint = (1, None)
             btn_update.height = dp(50)
             btn_update.bind(on_release=lambda x: check_for_updates(manual=True))
