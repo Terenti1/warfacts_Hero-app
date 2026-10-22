@@ -1,4 +1,4 @@
-# main.py - Приложение "Герои Беларуси" (исправлена верстка)
+# main.py - Приложение "Герои Беларуси" (ФИНАЛ, кнопка назад исправлена)
 
 import random
 from kivy.app import App
@@ -6,6 +6,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.button import ButtonBehavior
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
@@ -48,6 +49,33 @@ def _fact_label(fact, length=60):
     return text[:length] + "..." if len(text) > length else text
 
 
+class BackButton(ButtonBehavior, AnchorLayout):
+    """Специальный класс для кнопки 'Назад', который центрирует картинку."""
+    def __init__(self, callback, **kwargs):
+        super().__init__(**kwargs)
+        
+        with self.canvas.before:
+            Color(*COLOR_BTN_BG)
+            self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(6)])
+            Color(*COLOR_GOLD)
+            self.line = Line(rounded_rectangle=(self.x, self.y, self.width, self.height, dp(6)), width=1.5)
+            
+        self.bind(pos=self.update_graphics, size=self.update_graphics)
+        
+        # Картинка с фиксированным размером, AnchorLayout сам её отцентрирует
+        self.img = Image(source='icon_arrow_left.png', size_hint=(None, None), size=(dp(24), dp(24)))
+        self.img.allow_stretch = True
+        self.img.keep_ratio = True
+        self.add_widget(self.img)
+        
+        self.bind(on_release=callback)
+
+    def update_graphics(self, instance, value):
+        self.rect.pos = instance.pos
+        self.rect.size = instance.size
+        self.line.rounded_rectangle = (instance.x, instance.y, instance.width, instance.height, dp(6))
+
+
 def make_header(title_text, back_callback, height=dp(50)):
     header = FloatLayout(size_hint=(1, None), height=height)
     title = Label(
@@ -57,59 +85,36 @@ def make_header(title_text, back_callback, height=dp(50)):
     )
     header.add_widget(title)
     
-    back_btn = Button(size_hint=(0.15, 1), pos_hint={'x': 0, 'y': 0}, background_normal='', background_color=(0,0,0,0))
-    with back_btn.canvas.before:
-        Color(*COLOR_BTN_BG)
-        back_rect = Rectangle(pos=back_btn.pos, size=back_btn.size)
-        Color(*COLOR_GOLD)
-        back_line = Line(rectangle=(back_btn.x, back_btn.y, back_btn.width, back_btn.height), width=1.5)
-        
-    def update_back(instance, value):
-        back_rect.pos = instance.pos; back_rect.size = instance.size
-        back_line.rectangle = (instance.x, instance.y, instance.width, instance.height)
-    back_btn.bind(pos=update_back, size=update_back)
-    
-    back_img = Image(source='icon_arrow_left.png', size_hint=(0.5, 0.5), pos_hint={'center_x':0.5, 'center_y':0.5})
-    back_img.allow_stretch = True
-    back_img.keep_ratio = True
-    back_btn.add_widget(back_img)
-    
-    back_btn.bind(on_release=back_callback)
+    back_btn = BackButton(back_callback, size_hint=(0.15, 1), pos_hint={'x': 0, 'y': 0})
     header.add_widget(back_btn)
     return header
 
 
-class IconMenuButton(Button):
+class IconMenuButton(ButtonBehavior, BoxLayout):
     def __init__(self, text, icon_source, orientation='vertical', **kwargs):
         super().__init__(**kwargs)
-        self.background_normal = ''
-        self.background_color = (0,0,0,0)
-        self.text = ""
+        self.orientation = orientation
+        self.padding = dp(5)
+        self.spacing = dp(5)
         
         with self.canvas.before:
-            self.bg_color = Color(*COLOR_BTN_BG)
+            Color(*COLOR_BTN_BG)
             self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(8)])
-            self.line_color = Color(*COLOR_GOLD)
+            Color(*COLOR_GOLD)
             self.line = Line(rounded_rectangle=(self.x, self.y, self.width, self.height, dp(8)), width=2)
             
         self.bind(pos=self.update_graphics, size=self.update_graphics)
 
-        # Контейнер, который жестко привязан к размерам кнопки
-        self.content = BoxLayout(orientation=orientation, padding=dp(5), spacing=dp(5), 
-                                 size_hint=(1, 1), pos_hint={'x': 0, 'y': 0})
-        
         img_hint = (1, 0.6) if orientation == 'vertical' else (0.3, 1)
         text_hint = (1, 0.4) if orientation == 'vertical' else (0.7, 1)
         
         self.img = Image(source=icon_source, size_hint=img_hint)
         self.img.allow_stretch = True
         self.img.keep_ratio = True
-        self.content.add_widget(self.img)
+        self.add_widget(self.img)
         
         self.text_label = Label(text=text, font_size='16sp', color=COLOR_GOLD, bold=True, size_hint=text_hint)
-        self.content.add_widget(self.text_label)
-        
-        self.add_widget(self.content)
+        self.add_widget(self.text_label)
 
     def update_graphics(self, instance, value):
         self.rect.pos = instance.pos
@@ -117,12 +122,9 @@ class IconMenuButton(Button):
         self.line.rounded_rectangle = (instance.x, instance.y, instance.width, instance.height, dp(8))
 
 
-class IconActionButton(Button):
+class IconActionButton(ButtonBehavior, BoxLayout):
     def __init__(self, icon_source, **kwargs):
         super().__init__(**kwargs)
-        self.background_normal = ''
-        self.background_color = (0,0,0,0)
-        self.text = ""
         
         with self.canvas.before:
             Color(*COLOR_BTN_BG)
@@ -152,12 +154,12 @@ class IconActionButton(Button):
         self.bind(pos=self.update_graphics, size=self.update_graphics)
 
 
-class HeroFactCard(Button):
+class HeroFactCard(ButtonBehavior, BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.background_normal = ''
-        self.background_color = (0,0,0,0)
-        self.text = ""
+        self.orientation = 'vertical'
+        self.padding = [dp(15), dp(10)]
+        self.spacing = dp(5)
         
         with self.canvas.before:
             Color(*COLOR_RED)
@@ -167,15 +169,12 @@ class HeroFactCard(Button):
             
         self.bind(pos=self.update_graphics, size=self.update_graphics)
 
-        self.content = BoxLayout(orientation='vertical', padding=[dp(15), dp(10)], spacing=dp(5),
-                                 size_hint=(1, 1), pos_hint={'x': 0, 'y': 0})
-        
         star_img = Image(source='star_red_green_gold.png', size_hint=(1, 0.25))
         star_img.allow_stretch = True
         star_img.keep_ratio = True
-        self.content.add_widget(star_img)
+        self.add_widget(star_img)
         
-        self.content.add_widget(Label(text="ФАКТ ДНЯ", font_size='18sp', color=COLOR_GOLD, bold=True, size_hint=(1, 0.15)))
+        self.add_widget(Label(text="ФАКТ ДНЯ", font_size='18sp', color=COLOR_GOLD, bold=True, size_hint=(1, 0.15)))
         
         bottom_box = BoxLayout(orientation='horizontal', spacing=dp(15), size_hint=(1, 0.6))
         
@@ -205,8 +204,7 @@ class HeroFactCard(Button):
         
         bottom_box.add_widget(photo_layout)
         bottom_box.add_widget(text_layout)
-        self.content.add_widget(bottom_box)
-        self.add_widget(self.content)
+        self.add_widget(bottom_box)
 
     def update_graphics(self, instance, value):
         self.rect.pos = instance.pos
@@ -236,14 +234,12 @@ class MainMenuScreen(Screen):
     def build_ui(self):
         layout = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
 
-        # 1. Шапка (прибиваем высоту)
         header = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(100))
-        header.add_widget(Label(text="НИКТО НЕ ЗАБЫТ", font_size='12sp', color=COLOR_GOLD, bold=True, size_hint_y=0.3))
-        header.add_widget(Label(text="ГЕРОИ БЕЛАРУСИ", font_size='26sp', color=COLOR_GOLD, bold=True, size_hint_y=0.4))
-        header.add_widget(Label(text="Партизаны, лётчики, подпольщики", font_size='13sp', color=COLOR_TEXT, size_hint_y=0.3))
+        header.add_widget(Label(text="НИКТО НЕ ЗАБЫТ", font_size='12sp', color=COLOR_GOLD, bold=True, size_hint=(1, None), height=dp(25)))
+        header.add_widget(Label(text="ГЕРОИ БЕЛАРУСИ", font_size='26sp', color=COLOR_GOLD, bold=True, size_hint=(1, None), height=dp(50)))
+        header.add_widget(Label(text="Партизаны, лётчики, подпольщики", font_size='13sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(25)))
         layout.add_widget(header)
 
-        # 2. Прогресс
         total_facts = get_facts_count()
         viewed = len(self.user_prefs.data["viewed_facts"])
         progress = self.user_prefs.get_total_progress(total_facts)
@@ -277,13 +273,11 @@ class MainMenuScreen(Screen):
         prog_box.add_widget(pbar_layout)
         layout.add_widget(prog_box)
 
-        # 3. Факт дня
         self.fact_card = HeroFactCard(size_hint=(1, None), height=dp(180))
         self.fact_card.bind(on_release=self.go_to_fact_of_day)
         layout.add_widget(self.fact_card)
 
-        # 4. Меню (сетка)
-        layout.add_widget(BoxLayout(size_hint=(1, 0.1))) # Отступ
+        layout.add_widget(BoxLayout(size_hint=(1, 0.1)))
 
         grid = GridLayout(cols=2, spacing=dp(12), size_hint=(1, None), height=dp(240))
         
@@ -304,7 +298,7 @@ class MainMenuScreen(Screen):
         grid.add_widget(btn_settings)
 
         layout.add_widget(grid)
-        layout.add_widget(BoxLayout(size_hint=(1, 0.1))) # Отступ снизу
+        layout.add_widget(BoxLayout(size_hint=(1, 0.1)))
 
         self.add_widget(layout)
 
@@ -346,21 +340,8 @@ class FactScreen(Screen):
 
         top_panel = BoxLayout(size_hint=(1, None), height=dp(45), spacing=dp(8))
         
-        back_btn = Button(background_normal='', background_color=(0,0,0,0))
-        with back_btn.canvas.before:
-            Color(*COLOR_BTN_BG)
-            back_rect = RoundedRectangle(pos=back_btn.pos, size=back_btn.size, radius=[dp(8)])
-            Color(*COLOR_GOLD)
-            back_line = Line(rounded_rectangle=(back_btn.x, back_btn.y, back_btn.width, back_btn.height, dp(8)), width=2)
-            
-        def update_back(instance, value):
-            back_rect.pos = instance.pos; back_rect.size = instance.size
-            back_line.rounded_rectangle = (instance.x, instance.y, instance.width, instance.height, dp(8))
-        back_btn.bind(pos=update_back, size=update_back)
-        
-        back_img = Image(source='icon_arrow_left.png', size_hint=(0.5, 0.5), pos_hint={'center_x':0.5, 'center_y':0.5})
-        back_btn.add_widget(back_img)
-        back_btn.bind(on_release=self.go_back)
+        # Используем новый BackButton
+        back_btn = BackButton(self.go_back, size_hint=(0.15, 1))
         top_panel.add_widget(back_btn)
 
         self.ext_btn = IconMenuButton("Подробнее", "icon_bookmark.png", orientation='horizontal')
@@ -777,4 +758,5 @@ class WarFactApp(App):
 
 
 if __name__ == '__main__':
+    WarFactApp().run()
     WarFactApp().run()
