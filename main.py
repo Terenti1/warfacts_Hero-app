@@ -1,4 +1,4 @@
-# main.py - Приложение "Герои Беларуси" (с иконками)
+# main.py - Приложение "Герои Беларуси" (с иконками и исправлениями)
 
 import random
 from kivy.app import App
@@ -67,14 +67,18 @@ def make_header(title_text, back_callback, height=dp(50)):
     )
     with back_btn.canvas.before:
         Color(*COLOR_BTN_BG)
-        Rectangle(pos=back_btn.pos, size=back_btn.size)
+        back_rect = Rectangle(pos=back_btn.pos, size=back_btn.size)
         Color(*COLOR_GOLD)
-        Line(rectangle=(back_btn.x, back_btn.y, back_btn.width, back_btn.height), width=1.5)
+        back_line = Line(rectangle=(back_btn.x, back_btn.y, back_btn.width, back_btn.height), width=1.5)
         
-    back_img = Image(source='icon_arrow_left.png', size_hint=(1,1), pos_hint={'center_x':0.5, 'center_y':0.5})
+    def update_back(instance, value):
+        back_rect.pos = instance.pos; back_rect.size = instance.size
+        back_line.rectangle = (instance.x, instance.y, instance.width, instance.height)
+    back_btn.bind(pos=update_back, size=update_back)
+    
+    back_img = Image(source='icon_arrow_left.png', size_hint=(0.5, 0.5), pos_hint={'center_x':0.5, 'center_y':0.5})
     back_img.allow_stretch = True
     back_img.keep_ratio = True
-    back_img.size_hint = (0.5, 0.5)
     back_btn.add_widget(back_img)
     
     back_btn.bind(on_release=back_callback)
@@ -83,7 +87,7 @@ def make_header(title_text, back_callback, height=dp(50)):
 
 
 class MenuButton(ButtonBehavior, BoxLayout):
-    """Кнопка главного меню с иконкой сверху и текстом снизу."""
+    """Кнопка с иконкой и текстом. Сохраняет ссылку на текст в self.text_label."""
     def __init__(self, text, icon_source, **kwargs):
         super().__init__(**kwargs)
         self.orientation = 'vertical'
@@ -99,14 +103,14 @@ class MenuButton(ButtonBehavior, BoxLayout):
         self.bind(pos=self.update_graphics, size=self.update_graphics)
 
         # Иконка
-        img = Image(source=icon_source, size_hint=(1, 0.6))
-        img.allow_stretch = True
-        img.keep_ratio = True
-        self.add_widget(img)
+        self.img = Image(source=icon_source, size_hint=(1, 0.6))
+        self.img.allow_stretch = True
+        self.img.keep_ratio = True
+        self.add_widget(self.img)
         
-        # Текст
-        lbl = Label(text=text, font_size='16sp', color=COLOR_GOLD, bold=True, size_hint=(1, 0.4))
-        self.add_widget(lbl)
+        # Текст (сохраняем ссылку!)
+        self.text_label = Label(text=text, font_size='16sp', color=COLOR_GOLD, bold=True, size_hint=(1, 0.4))
+        self.add_widget(self.text_label)
 
     def update_graphics(self, instance, value):
         self.rect.pos = instance.pos
@@ -128,10 +132,9 @@ class ActionButton(ButtonBehavior, BoxLayout):
             
         self.bind(pos=self.update_graphics, size=self.update_graphics)
         
-        self.img = Image(source=icon_source, size_hint=(1, 1), pos_hint={'center_x':0.5, 'center_y':0.5})
+        self.img = Image(source=icon_source, size_hint=(0.6, 0.6), pos_hint={'center_x':0.5, 'center_y':0.5})
         self.img.allow_stretch = True
         self.img.keep_ratio = True
-        self.img.size_hint = (0.6, 0.6) # Чуть меньше самой кнопки
         self.add_widget(self.img)
 
     def update_graphics(self, instance, value):
@@ -281,7 +284,7 @@ class MainMenuScreen(Screen):
 
         layout.add_widget(BoxLayout(size_hint=(1, 0.1)))
 
-        # Сетка кнопок (с иконками)
+        # Сетка кнопок
         grid = GridLayout(cols=2, spacing=dp(12), size_hint=(1, None), height=dp(240))
         
         btn_history = MenuButton("История", "icon_book.png")
@@ -363,10 +366,9 @@ class FactScreen(Screen):
         top_panel.add_widget(back_btn)
 
         # Кнопка подробнее
-        self.ext_btn = MenuButton("Подробнее", "icon_bookmark.png") # Используем bookmark как иконку инфо
+        self.ext_btn = MenuButton("Подробнее", "icon_bookmark.png") 
         self.ext_btn.size_hint = (0.85, 1)
-        self.ext_btn.padding = [dp(10), dp(0), dp(10), dp(0)] # Убираем лишние отступы
-        self.ext_btn.orientation = 'horizontal' # Текст и иконка в ряд
+        self.ext_btn.orientation = 'horizontal' 
         self.ext_btn.bind(on_release=self.toggle_extended)
         top_panel.add_widget(self.ext_btn)
         main_layout.add_widget(top_panel)
@@ -417,24 +419,20 @@ class FactScreen(Screen):
         self.scroll.add_widget(content_box)
         main_layout.add_widget(self.scroll)
 
-        # 3. НИЖНЯЯ ПАНЕЛЬ (Кнопки)
+        # 3. НИЖНЯЯ ПАНЕЛЬ
         bottom_panel = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(100), spacing=dp(10))
         
         action_row = BoxLayout(size_hint=(1, None), height=dp(60), spacing=dp(10))
 
-        # Лайк (Heart)
         self.like_btn = ActionButton("icon_heart.png")
         self.like_btn.bind(on_release=self.toggle_like)
         
-        # Дизлайк (Bookmark)
         self.dislike_btn = ActionButton("icon_bookmark.png")
         self.dislike_btn.bind(on_release=self.toggle_dislike)
         
-        # Заметки (Pencil)
         self.note_btn = ActionButton("icon_pencil.png")
         self.note_btn.bind(on_release=self.open_note_popup)
         
-        # Далее (Refresh/Arrow)
         next_btn = ActionButton("icon_refresh.png")
         next_btn.bind(on_release=self.next_fact)
 
@@ -454,7 +452,8 @@ class FactScreen(Screen):
         self.current_fact = fact
         self.showing_extended = False
         self.ext_text.opacity = 0
-        self.ext_btn.children[0].text = "Подробнее"
+        # ИСПОЛЬЗУЕМ text_label ВМЕСТО children[0]
+        self.ext_btn.text_label.text = "Подробнее"
         
         self.scroll.scroll_y = 1 
 
@@ -475,7 +474,7 @@ class FactScreen(Screen):
         self.update_buttons(status)
 
         if self.user_prefs.has_note(fact["id"]):
-            self.note_btn.set_active((0.2, 0.8, 0.2, 0.2)) # Зеленоватый фон для заметки
+            self.note_btn.set_active((0.2, 0.8, 0.2, 0.2))
         else:
             self.note_btn.set_active(COLOR_BTN_BG)
 
@@ -490,12 +489,14 @@ class FactScreen(Screen):
         self.showing_extended = not self.showing_extended
         if self.showing_extended:
             self.ext_text.opacity = 1
-            self.ext_btn.children[0].text = "Скрыть"
+            # ИСПОЛЬЗУЕМ text_label
+            self.ext_btn.text_label.text = "Скрыть"
             self.ext_text.text_size = (self.ext_text.width, None)
             Animation(opacity=1, duration=0.3).start(self.ext_text)
         else:
             Animation(opacity=0, duration=0.3).start(self.ext_text)
-            self.ext_btn.children[0].text = "Подробнее"
+            # ИСПОЛЬЗУЕМ text_label
+            self.ext_btn.text_label.text = "Подробнее"
 
     def open_note_popup(self, instance):
         if not self.current_fact: return
@@ -528,14 +529,13 @@ class FactScreen(Screen):
         popup.open()
 
     def update_buttons(self, status):
-        # Сброс
         self.like_btn.set_active(COLOR_BTN_BG)
         self.dislike_btn.set_active(COLOR_BTN_BG)
 
         if status == "liked":
-            self.like_btn.set_active(COLOR_GOLD) # Золотой фон для лайка
+            self.like_btn.set_active(COLOR_GOLD) 
         elif status == "disliked":
-            self.dislike_btn.set_active(COLOR_RED) # Красный фон для дизлайка
+            self.dislike_btn.set_active(COLOR_RED) 
 
     def toggle_like(self, instance):
         if not self.current_fact: return
@@ -575,7 +575,7 @@ class FactScreen(Screen):
 
 
 # ============================================================
-#  ОСТАЛЬНЫЕ ЭКРАНЫ (без изменений в дизайне, только адаптация)
+#  ОСТАЛЬНЫЕ ЭКРАНЫ
 # ============================================================
 
 class HistoryScreen(Screen):
@@ -748,7 +748,7 @@ class SettingsScreen(Screen):
         btn_clear.bind(on_release=self.clear_history)
         layout.add_widget(btn_clear)
 
-        btn_reset = MenuButton("Сбросить всё", "icon_trash.png" if False else "icon_medal.png") # trash нет, поставил медаль
+        btn_reset = MenuButton("Сбросить всё", "icon_medal.png")
         btn_reset.orientation = 'horizontal'
         btn_reset.size_hint = (1, None)
         btn_reset.height = dp(50)
