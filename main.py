@@ -1,4 +1,4 @@
-# main.py - Приложение "Герои Беларуси" (ФИНАЛ, кнопка назад исправлена)
+# main.py - Приложение "Герои Беларуси" (ФИНАЛ + подтверждение очистки)
 
 import random
 from kivy.app import App
@@ -50,10 +50,8 @@ def _fact_label(fact, length=60):
 
 
 class BackButton(ButtonBehavior, AnchorLayout):
-    """Специальный класс для кнопки 'Назад', который центрирует картинку."""
     def __init__(self, callback, **kwargs):
         super().__init__(**kwargs)
-        
         with self.canvas.before:
             Color(*COLOR_BTN_BG)
             self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(6)])
@@ -61,13 +59,10 @@ class BackButton(ButtonBehavior, AnchorLayout):
             self.line = Line(rounded_rectangle=(self.x, self.y, self.width, self.height, dp(6)), width=1.5)
             
         self.bind(pos=self.update_graphics, size=self.update_graphics)
-        
-        # Картинка с фиксированным размером, AnchorLayout сам её отцентрирует
         self.img = Image(source='icon_arrow_left.png', size_hint=(None, None), size=(dp(24), dp(24)))
         self.img.allow_stretch = True
         self.img.keep_ratio = True
         self.add_widget(self.img)
-        
         self.bind(on_release=callback)
 
     def update_graphics(self, instance, value):
@@ -220,16 +215,12 @@ class MainMenuScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.user_prefs = UserPreferences()
-        self._built_once = False
         self.build_ui()
 
     def on_enter(self, *args):
-        if self._built_once:
-            self.clear_widgets()
-            self.user_prefs = UserPreferences()
-            self.build_ui()
-        else:
-            self._built_once = True
+        self.clear_widgets()
+        self.user_prefs = UserPreferences()
+        self.build_ui()
 
     def build_ui(self):
         layout = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
@@ -340,7 +331,6 @@ class FactScreen(Screen):
 
         top_panel = BoxLayout(size_hint=(1, None), height=dp(45), spacing=dp(8))
         
-        # Используем новый BackButton
         back_btn = BackButton(self.go_back, size_hint=(0.15, 1))
         top_panel.add_widget(back_btn)
 
@@ -552,13 +542,12 @@ class HistoryScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.user_prefs = UserPreferences()
-        self._built_once = False
         self.build_ui()
 
     def on_enter(self, *args):
-        if self._built_once:
-            self.clear_widgets(); self.user_prefs = UserPreferences(); self.build_ui()
-        else: self._built_once = True
+        self.clear_widgets()
+        self.user_prefs = UserPreferences()
+        self.build_ui()
 
     def build_ui(self):
         layout = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(6))
@@ -607,13 +596,12 @@ class NotesScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.user_prefs = UserPreferences()
-        self._built_once = False
         self.build_ui()
 
     def on_enter(self, *args):
-        if self._built_once:
-            self.clear_widgets(); self.user_prefs = UserPreferences(); self.build_ui()
-        else: self._built_once = True
+        self.clear_widgets()
+        self.user_prefs = UserPreferences()
+        self.build_ui()
 
     def build_ui(self):
         layout = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(6))
@@ -650,13 +638,12 @@ class StatsScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.user_prefs = UserPreferences()
-        self._built_once = False
         self.build_ui()
 
     def on_enter(self, *args):
-        if self._built_once:
-            self.clear_widgets(); self.user_prefs = UserPreferences(); self.build_ui()
-        else: self._built_once = True
+        self.clear_widgets()
+        self.user_prefs = UserPreferences()
+        self.build_ui()
 
     def build_ui(self):
         layout = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(6))
@@ -693,13 +680,12 @@ class SettingsScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.user_prefs = UserPreferences()
-        self._built_once = False
         self.build_ui()
 
     def on_enter(self, *args):
-        if self._built_once:
-            self.clear_widgets(); self.user_prefs = UserPreferences(); self.build_ui()
-        else: self._built_once = True
+        self.clear_widgets()
+        self.user_prefs = UserPreferences()
+        self.build_ui()
 
     def build_ui(self):
         layout = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
@@ -710,13 +696,13 @@ class SettingsScreen(Screen):
         btn_clear = IconMenuButton("Очистить историю", "icon_refresh.png", orientation='horizontal')
         btn_clear.size_hint = (1, None)
         btn_clear.height = dp(50)
-        btn_clear.bind(on_release=self.clear_history)
+        btn_clear.bind(on_release=self.confirm_clear_history)
         layout.add_widget(btn_clear)
 
         btn_reset = IconMenuButton("Сбросить всё", "icon_chart_bar.png", orientation='horizontal')
         btn_reset.size_hint = (1, None)
         btn_reset.height = dp(50)
-        btn_reset.bind(on_release=self.reset_all)
+        btn_reset.bind(on_release=self.confirm_reset_all)
         layout.add_widget(btn_reset)
 
         if UPDATER_AVAILABLE:
@@ -729,10 +715,62 @@ class SettingsScreen(Screen):
         layout.add_widget(BoxLayout(size_hint=(1, 1)))
         self.add_widget(layout)
 
-    def clear_history(self, instance):
-        self.user_prefs.clear_history(); self.build_ui()
-    def reset_all(self, instance):
-        self.user_prefs.reset_data(); self.build_ui()
+    def confirm_clear_history(self, instance):
+        """Подтверждение очистки истории"""
+        content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
+        
+        lbl = Label(text="Вы уверены, что хотите очистить историю просмотров?\nЭто действие нельзя отменить.", 
+                    font_size='16sp', color=COLOR_TEXT, halign='center', valign='middle')
+        lbl.bind(width=lambda i, v: setattr(i, 'text_size', (v, None)))
+        content.add_widget(lbl)
+        
+        btn_row = BoxLayout(size_hint=(1, None), height=dp(45), spacing=dp(10))
+        cancel_btn = Button(text="Отмена", background_color=(0.3, 0.3, 0.3, 1), color=COLOR_TEXT, font_size='16sp')
+        confirm_btn = Button(text="Очистить", background_color=COLOR_RED, color=COLOR_GOLD, font_size='16sp', bold=True)
+        
+        btn_row.add_widget(cancel_btn)
+        btn_row.add_widget(confirm_btn)
+        content.add_widget(btn_row)
+        
+        popup = Popup(title="", content=content, size_hint=(0.85, 0.35), background_color=COLOR_BTN_BG)
+        
+        def do_clear(inst):
+            self.user_prefs.clear_history()
+            popup.dismiss()
+            self.build_ui()
+            
+        confirm_btn.bind(on_release=do_clear)
+        cancel_btn.bind(on_release=popup.dismiss)
+        popup.open()
+
+    def confirm_reset_all(self, instance):
+        """Подтверждение полного сброса"""
+        content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
+        
+        lbl = Label(text="ВНИМАНИЕ!\nВы действительно хотите удалить ВСЕ данные?\n(Историю, лайки, заметки и прогресс)", 
+                    font_size='15sp', color=COLOR_TEXT, halign='center', valign='middle')
+        lbl.bind(width=lambda i, v: setattr(i, 'text_size', (v, None)))
+        content.add_widget(lbl)
+        
+        btn_row = BoxLayout(size_hint=(1, None), height=dp(45), spacing=dp(10))
+        cancel_btn = Button(text="Отмена", background_color=(0.3, 0.3, 0.3, 1), color=COLOR_TEXT, font_size='16sp')
+        confirm_btn = Button(text="Удалить всё", background_color=COLOR_RED, color=COLOR_GOLD, font_size='16sp', bold=True)
+        
+        btn_row.add_widget(cancel_btn)
+        btn_row.add_widget(confirm_btn)
+        content.add_widget(btn_row)
+        
+        popup = Popup(title="", content=content, size_hint=(0.85, 0.4), background_color=COLOR_BTN_BG)
+        
+        def do_reset(inst):
+            self.user_prefs.reset_data()
+            popup.dismiss()
+            self.build_ui()
+            
+        confirm_btn.bind(on_release=do_reset)
+        cancel_btn.bind(on_release=popup.dismiss)
+        popup.open()
+
     def go_back(self, instance): self.manager.current = 'main_menu'
 
 
@@ -758,5 +796,4 @@ class WarFactApp(App):
 
 
 if __name__ == '__main__':
-    WarFactApp().run()
     WarFactApp().run()
