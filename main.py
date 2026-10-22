@@ -1,4 +1,4 @@
-# main.py - Приложение "Герои Беларуси" (ФИНАЛ + подтверждение очистки)
+# main.py - Приложение "Герои Беларуси" (ФИНАЛ + Викторина)
 
 import random
 from kivy.app import App
@@ -19,6 +19,7 @@ from kivy.animation import Animation
 from kivy.utils import get_color_from_hex
 from kivy.graphics import Color, Rectangle, RoundedRectangle, Line, Ellipse
 from kivy.metrics import dp
+from kivy.clock import Clock
 
 from data import FACTS_DATABASE, get_facts_count, get_fact_by_id, get_all_tags, get_facts_by_tag
 from user_data import UserPreferences
@@ -41,6 +42,7 @@ COLOR_GOLD = get_color_from_hex('#D4AF37')
 COLOR_RED = get_color_from_hex('#8B2525')       
 COLOR_TEXT = (0.95, 0.95, 0.95, 1)              
 COLOR_ORANGE = get_color_from_hex('#E67E22')    
+COLOR_GREEN = get_color_from_hex('#2E7D32')     
 
 def _fact_label(fact, length=60):
     title = fact.get("title")
@@ -223,11 +225,11 @@ class MainMenuScreen(Screen):
         self.build_ui()
 
     def build_ui(self):
-        layout = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
+        layout = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(10))
 
-        header = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(100))
+        header = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(90))
         header.add_widget(Label(text="НИКТО НЕ ЗАБЫТ", font_size='12sp', color=COLOR_GOLD, bold=True, size_hint=(1, None), height=dp(25)))
-        header.add_widget(Label(text="ГЕРОИ БЕЛАРУСИ", font_size='26sp', color=COLOR_GOLD, bold=True, size_hint=(1, None), height=dp(50)))
+        header.add_widget(Label(text="ГЕРОИ БЕЛАРУСИ", font_size='26sp', color=COLOR_GOLD, bold=True, size_hint=(1, None), height=dp(40)))
         header.add_widget(Label(text="Партизаны, лётчики, подпольщики", font_size='13sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(25)))
         layout.add_widget(header)
 
@@ -236,7 +238,7 @@ class MainMenuScreen(Screen):
         progress = self.user_prefs.get_total_progress(total_facts)
         streak = self.user_prefs.get_streak_days()
 
-        prog_box = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(50), spacing=dp(5))
+        prog_box = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(45), spacing=dp(5))
         
         prog_labels = BoxLayout(size_hint=(1, None), height=dp(20))
         prog_labels.add_widget(Label(text=f"Прогресс: {viewed}/{total_facts}", font_size='13sp', color=COLOR_TEXT, halign='left'))
@@ -264,13 +266,14 @@ class MainMenuScreen(Screen):
         prog_box.add_widget(pbar_layout)
         layout.add_widget(prog_box)
 
-        self.fact_card = HeroFactCard(size_hint=(1, None), height=dp(180))
+        self.fact_card = HeroFactCard(size_hint=(1, None), height=dp(160))
         self.fact_card.bind(on_release=self.go_to_fact_of_day)
         layout.add_widget(self.fact_card)
 
-        layout.add_widget(BoxLayout(size_hint=(1, 0.1)))
+        layout.add_widget(BoxLayout(size_hint=(1, 0.05)))
 
-        grid = GridLayout(cols=2, spacing=dp(12), size_hint=(1, None), height=dp(240))
+        # Сетка кнопок (теперь 2x3, чтобы влезла викторина)
+        grid = GridLayout(cols=2, spacing=dp(10), size_hint=(1, None), height=dp(300))
         
         btn_history = IconMenuButton("История", "icon_book.png")
         btn_history.bind(on_release=self.go_to_history)
@@ -287,9 +290,16 @@ class MainMenuScreen(Screen):
         btn_settings = IconMenuButton("Настройки", "icon_settings.png")
         btn_settings.bind(on_release=self.go_to_settings)
         grid.add_widget(btn_settings)
+        
+        btn_quiz = IconMenuButton("Викторина", "icon_check.png")
+        btn_quiz.bind(on_release=self.go_to_quiz)
+        grid.add_widget(btn_quiz)
+        
+        # Пустая ячейка для красоты (чтобы было ровно 6)
+        grid.add_widget(BoxLayout(size_hint=(1,1)))
 
         layout.add_widget(grid)
-        layout.add_widget(BoxLayout(size_hint=(1, 0.1)))
+        layout.add_widget(BoxLayout(size_hint=(1, 0.05)))
 
         self.add_widget(layout)
 
@@ -312,6 +322,7 @@ class MainMenuScreen(Screen):
     def go_to_notes(self, instance): self.manager.current = 'notes_screen'
     def go_to_stats(self, instance): self.manager.current = 'stats_screen'
     def go_to_settings(self, instance): self.manager.current = 'settings_screen'
+    def go_to_quiz(self, instance): self.manager.current = 'quiz_screen'
 
 
 # ============================================================
@@ -535,6 +546,121 @@ class FactScreen(Screen):
 
 
 # ============================================================
+#  НОВЫЙ ЭКРАН: ВИКТОРИНА
+# ============================================================
+
+class QuizScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.user_prefs = UserPreferences()
+        self.current_fact = None
+        self.correct_title = ""
+        self.option_buttons = []
+        self.build_ui()
+
+    def on_enter(self, *args):
+        self.start_new_round()
+
+    def build_ui(self):
+        layout = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(10))
+        
+        # Хедер
+        header = make_header("Проверка знаний", self.go_back)
+        layout.add_widget(header)
+
+        # Статистика
+        q_stats = self.user_prefs.get_quiz_stats()
+        self.score_label = Label(
+            text=f"Счёт: {q_stats['score']}  |  Правильно: {q_stats['correct']} из {q_stats['attempts']}",
+            font_size='16sp', color=COLOR_ORANGE, bold=True, size_hint=(1, None), height=dp(30)
+        )
+        layout.add_widget(self.score_label)
+
+        # Текст вопроса
+        self.question_label = Label(
+            text="", font_size='20sp', color=COLOR_TEXT, bold=True,
+            halign='center', valign='middle', size_hint=(1, 0.3)
+        )
+        self.question_label.bind(width=lambda i, v: setattr(i, 'text_size', (v, None)))
+        layout.add_widget(self.question_label)
+
+        # Сетка вариантов ответа (2x2)
+        self.options_grid = GridLayout(cols=2, spacing=dp(10), size_hint=(1, 0.5))
+        layout.add_widget(self.options_grid)
+
+        self.add_widget(layout)
+
+    def start_new_round(self):
+        # Очищаем сетку
+        self.options_grid.clear_widgets()
+        self.option_buttons = []
+
+        # Берем случайный факт (приоритет - изученные)
+        viewed = [f for f in FACTS_DATABASE if f["id"] in self.user_prefs.data["viewed_facts"]]
+        pool = viewed if len(viewed) >= 4 else FACTS_DATABASE
+        
+        self.current_fact = random.choice(pool)
+        self.correct_title = self.current_fact.get("title", "")
+        
+        # Формируем вопрос (текст факта)
+        self.question_label.text = f"Кто это?\n\n{self.current_fact['text']}"
+
+        # Формируем варианты ответов (1 правильный + 3 неправильных)
+        wrong_facts = [f for f in FACTS_DATABASE if f["id"] != self.current_fact["id"]]
+        wrong_titles = [f.get("title", "") for f in random.sample(wrong_facts, 3)]
+        
+        options = [self.correct_title] + wrong_titles
+        random.shuffle(options)
+
+        # Создаем кнопки
+        for option in options:
+            btn = Button(
+                text=option,
+                font_size='16sp',
+                background_color=COLOR_BTN_BG,
+                color=COLOR_GOLD,
+                bold=True
+            )
+            btn.bind(on_release=lambda b, opt=option: self.check_answer(b, opt))
+            self.options_grid.add_widget(btn)
+            self.option_buttons.append(btn)
+
+    def check_answer(self, btn, selected_option):
+        # Блокируем кнопки от повторных нажатий
+        for b in self.option_buttons:
+            b.disabled = True
+
+        is_correct = (selected_option == self.correct_title)
+        
+        # Сохраняем результат
+        self.user_prefs.add_quiz_result(is_correct)
+        
+        # Обновляем счетчик
+        q_stats = self.user_prefs.get_quiz_stats()
+        self.score_label.text = f"Счёт: {q_stats['score']}  |  Правильно: {q_stats['correct']} из {q_stats['attempts']}"
+
+        # Визуальная обратная связь
+        if is_correct:
+            btn.background_color = COLOR_GREEN
+            btn.color = (1, 1, 1, 1)
+        else:
+            btn.background_color = COLOR_RED
+            btn.color = (1, 1, 1, 1)
+            
+            # Подсвечиваем правильный ответ зеленым
+            for b in self.option_buttons:
+                if b.text == self.correct_title:
+                    b.background_color = COLOR_GREEN
+                    b.color = (1, 1, 1, 1)
+
+        # Через 1.5 секунды начинаем новый раунд
+        Clock.schedule_once(lambda dt: self.start_new_round(), 1.5)
+
+    def go_back(self, instance):
+        self.manager.current = 'main_menu'
+
+
+# ============================================================
 #  ОСТАЛЬНЫЕ ЭКРАНЫ
 # ============================================================
 
@@ -654,12 +780,17 @@ class StatsScreen(Screen):
         content.bind(minimum_height=content.setter('height'))
 
         stats = self.user_prefs.get_user_stats()
+        q_stats = self.user_prefs.get_quiz_stats()
         total_facts = get_facts_count()
         progress = self.user_prefs.get_total_progress(total_facts)
 
         content.add_widget(Label(text="[ ОБЩИЙ ПРОГРЕСС ]", font_size='18sp', color=COLOR_GOLD, size_hint=(1, None), height=dp(40)))
         content.add_widget(Label(text=f"Изучено: {stats['unique_facts_viewed']} / {total_facts}", font_size='15sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(30)))
         content.add_widget(Label(text=f"Прогресс: {progress}%", font_size='15sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(30)))
+        
+        content.add_widget(Label(text="[ ВИКТОРИНА ]", font_size='18sp', color=COLOR_GOLD, size_hint=(1, None), height=dp(40)))
+        content.add_widget(Label(text=f"Счёт: {q_stats['score']} очков", font_size='15sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(30)))
+        content.add_widget(Label(text=f"Правильных ответов: {q_stats['correct']} из {q_stats['attempts']}", font_size='15sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(30)))
 
         content.add_widget(Label(text="[ ДОСТИЖЕНИЯ ]", font_size='18sp', color=COLOR_GOLD, size_hint=(1, None), height=dp(40)))
         achievements = self.user_prefs.get_achievement_progress()
@@ -716,9 +847,7 @@ class SettingsScreen(Screen):
         self.add_widget(layout)
 
     def confirm_clear_history(self, instance):
-        """Подтверждение очистки истории"""
         content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
-        
         lbl = Label(text="Вы уверены, что хотите очистить историю просмотров?\nЭто действие нельзя отменить.", 
                     font_size='16sp', color=COLOR_TEXT, halign='center', valign='middle')
         lbl.bind(width=lambda i, v: setattr(i, 'text_size', (v, None)))
@@ -744,10 +873,8 @@ class SettingsScreen(Screen):
         popup.open()
 
     def confirm_reset_all(self, instance):
-        """Подтверждение полного сброса"""
         content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
-        
-        lbl = Label(text="ВНИМАНИЕ!\nВы действительно хотите удалить ВСЕ данные?\n(Историю, лайки, заметки и прогресс)", 
+        lbl = Label(text="ВНИМАНИЕ!\nВы действительно хотите удалить ВСЕ данные?\n(Историю, лайки, заметки, викторину и прогресс)", 
                     font_size='15sp', color=COLOR_TEXT, halign='center', valign='middle')
         lbl.bind(width=lambda i, v: setattr(i, 'text_size', (v, None)))
         content.add_widget(lbl)
@@ -792,6 +919,7 @@ class WarFactApp(App):
         sm.add_widget(NotesScreen(name='notes_screen'))
         sm.add_widget(StatsScreen(name='stats_screen'))
         sm.add_widget(SettingsScreen(name='settings_screen'))
+        sm.add_widget(QuizScreen(name='quiz_screen')) # <--- НОВЫЙ ЭКРАН
         return sm
 
 
