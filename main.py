@@ -34,11 +34,11 @@ except Exception:
 
 # --- ЦВЕТОВАЯ ПАЛИТРА ---
 COLOR_BG = get_color_from_hex('#16251B')        # Темно-зеленый фон
-COLOR_BTN_BG = get_color_from_hex('#1E3024')    # Фон кнопок (чуть светлее)
+COLOR_BTN_BG = get_color_from_hex('#1E3024')    # Фон кнопок
 COLOR_GOLD = get_color_from_hex('#D4AF37')      # Золотой
 COLOR_RED = get_color_from_hex('#8B2525')       # Темно-красный
 COLOR_TEXT = (0.95, 0.95, 0.95, 1)              # Светлый текст
-COLOR_ORANGE = get_color_from_hex('#E67E22')    # Оранжевый для прогресса
+COLOR_ORANGE = get_color_from_hex('#E67E22')    # Оранжевый
 
 Window.clearcolor = COLOR_BG
 
@@ -68,20 +68,17 @@ def make_header(title_text, back_callback, height=dp(50)):
 
 
 class StyledButton(Button):
-    """Кнопка с темным фоном, золотой рамкой и скруглениями."""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.background_normal = ''
         self.background_color = (0, 0, 0, 0) 
         self.color = COLOR_GOLD
         self.bold = True
-        self.font_name = "Roboto" # Стандартный шрифт
         
         with self.canvas.before:
             Color(*COLOR_BTN_BG)
             self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(8)])
             Color(*COLOR_GOLD)
-            # Рисуем двойную рамку (внешнюю)
             self.line_outer = Line(rounded_rectangle=(self.x, self.y, self.width, self.height, dp(8)), width=2)
             
         self.bind(pos=self.update_graphics, size=self.update_graphics)
@@ -93,7 +90,6 @@ class StyledButton(Button):
 
 
 class FactCard(ButtonBehavior, BoxLayout):
-    """Красная карточка 'Факт дня'."""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.orientation = 'vertical'
@@ -108,17 +104,14 @@ class FactCard(ButtonBehavior, BoxLayout):
             
         self.bind(pos=self.update_graphics, size=self.update_graphics)
 
-        # Заголовок карточки
         self.add_widget(Label(text="★", font_size='28sp', color=COLOR_GOLD, size_hint=(1, 0.2)))
         self.add_widget(Label(text="ФАКТ ДНЯ", font_size='18sp', color=COLOR_GOLD, bold=True, size_hint=(1, 0.2)))
         
-        # Нижняя часть (Фото слева, Текст справа)
         bottom_box = BoxLayout(orientation='horizontal', spacing=dp(15), size_hint=(1, 0.6))
         
-        # Левая часть - Круг под фото
         photo_layout = FloatLayout(size_hint=(0.3, 1))
         with photo_layout.canvas:
-            Color(*COLOR_BG) # Темный фон круга
+            Color(*COLOR_BG)
             self.inner_circle = Ellipse(pos=photo_layout.pos, size=(dp(60), dp(60)))
             Color(*COLOR_GOLD)
             self.outer_circle = Line(circle=(0, 0, dp(31)), width=2)
@@ -133,7 +126,6 @@ class FactCard(ButtonBehavior, BoxLayout):
         photo_layout.bind(pos=update_photo, size=update_photo)
         photo_layout.add_widget(Label(text="ФОТО", font_size='10sp', color=COLOR_GOLD, pos_hint={'center_x':0.5, 'center_y':0.5}))
         
-        # Правая часть - Текст
         text_layout = BoxLayout(orientation='vertical', size_hint=(0.7, 1))
         text_layout.add_widget(Label(
             text="Портрет героя\nи краткий подвиг", 
@@ -171,7 +163,6 @@ class MainMenuScreen(Screen):
             self._built_once = True
 
     def build_ui(self):
-        # Основной контейнер
         layout = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
 
         # 1. Шапка
@@ -195,7 +186,6 @@ class MainMenuScreen(Screen):
         
         prog_box.add_widget(prog_labels)
         
-        # Прогресс-бар
         pbar_layout = FloatLayout(size_hint=(1, None), height=dp(12))
         with pbar_layout.canvas:
             Color(0.2, 0.2, 0.2, 1)
@@ -221,11 +211,9 @@ class MainMenuScreen(Screen):
         self.fact_card.bind(on_release=self.go_to_fact_of_day)
         layout.add_widget(self.fact_card)
 
-        # Добавляем гибкий отступ, чтобы прижать кнопки к низу, если экран большой
         layout.add_widget(BoxLayout(size_hint=(1, 0.1)))
 
         # 4. Сетка кнопок
-        # Увеличиваем высоту сетки и расстояние, чтобы они выглядели крупнее
         grid = GridLayout(cols=2, spacing=dp(12), size_hint=(1, None), height=dp(220))
         
         btn_history = StyledButton(text="История", font_size='16sp')
@@ -245,8 +233,6 @@ class MainMenuScreen(Screen):
         grid.add_widget(btn_settings)
 
         layout.add_widget(grid)
-        
-        # Ещё один отступ снизу
         layout.add_widget(BoxLayout(size_hint=(1, 0.1)))
 
         self.add_widget(layout)
@@ -273,7 +259,7 @@ class MainMenuScreen(Screen):
 
 
 # ============================================================
-#  ЭКРАН ФАКТА
+#  ЭКРАН ФАКТА (ПОЛНОСТЬЮ ПЕРЕПИСАН)
 # ============================================================
 
 class FactScreen(Screen):
@@ -285,10 +271,11 @@ class FactScreen(Screen):
         self.build_ui()
 
     def build_ui(self):
+        # Основной контейнер
         layout = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(10))
 
-        # Верхняя панель
-        top_panel = BoxLayout(size_hint=(1, None), height=dp(40), spacing=dp(8))
+        # 1. Верхняя панель (фиксированная, не скроллится)
+        top_panel = BoxLayout(size_hint=(1, None), height=dp(45), spacing=dp(8))
         back_btn = Button(text="<--", size_hint=(0.15, 1), background_color=(0.2, 0.2, 0.2, 0.5), color=COLOR_GOLD)
         back_btn.bind(on_release=self.go_back)
         top_panel.add_widget(back_btn)
@@ -297,6 +284,11 @@ class FactScreen(Screen):
         self.ext_btn.bind(on_release=self.toggle_extended)
         top_panel.add_widget(self.ext_btn)
         layout.add_widget(top_panel)
+
+        # 2. Основной контент в ScrollView (чтобы ничего не сплющивалось)
+        main_scroll = ScrollView(size_hint=(1, 1), bar_width=dp(4))
+        content_layout = BoxLayout(orientation='vertical', size_hint_y=None, spacing=dp(15))
+        content_layout.bind(minimum_height=content_layout.setter('height'))
 
         # Круглая заглушка для фото
         photo_container = FloatLayout(size_hint=(1, None), height=dp(140))
@@ -317,36 +309,37 @@ class FactScreen(Screen):
         
         self.photo_text = Label(text="ФОТО", font_size='16sp', color=COLOR_GOLD, pos_hint={'center_x':0.5, 'center_y':0.5})
         photo_container.add_widget(self.photo_text)
-        layout.add_widget(photo_container)
+        content_layout.add_widget(photo_container)
 
         # Текст факта
-        self.text_scroll = ScrollView(size_hint=(1, 0.3))
         self.fact_text = Label(
             text="", font_size='18sp', color=COLOR_TEXT,
-            halign='left', valign='top', size_hint=(1, None), text_size=(Window.width - dp(30), None)
+            halign='center', valign='top', size_hint_y=None
         )
-        self.fact_text.bind(texture_size=self.fact_text.setter('size'))
-        self.text_scroll.add_widget(self.fact_text)
-        layout.add_widget(self.text_scroll)
+        # Привязываем ширину и высоту
+        self.fact_text.bind(width=lambda instance, value: setattr(instance, 'text_size', (value, None)))
+        self.fact_text.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1]))
+        content_layout.add_widget(self.fact_text)
 
         # Расширенная информация
-        self.ext_scroll = ScrollView(size_hint=(1, 0.25))
         self.ext_text = Label(
             text="", font_size='14sp', color=(0.8, 0.8, 0.8, 1),
-            halign='left', valign='top', size_hint=(1, None), text_size=(Window.width - dp(30), None)
+            halign='center', valign='top', size_hint_y=None
         )
-        self.ext_text.bind(texture_size=self.ext_text.setter('size'))
-        self.ext_scroll.add_widget(self.ext_text)
-        self.ext_scroll.opacity = 0
-        self.ext_scroll.disabled = True
-        layout.add_widget(self.ext_scroll)
+        self.ext_text.bind(width=lambda instance, value: setattr(instance, 'text_size', (value, None)))
+        self.ext_text.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1]))
+        self.ext_text.opacity = 0
+        content_layout.add_widget(self.ext_text)
 
         # Теги
-        self.tags_label = Label(text="", font_size='12sp', color=COLOR_GOLD, size_hint=(1, None), height=dp(25), halign='center')
-        layout.add_widget(self.tags_label)
+        self.tags_label = Label(
+            text="", font_size='12sp', color=COLOR_GOLD, 
+            size_hint_y=None, height=dp(30), halign='center'
+        )
+        content_layout.add_widget(self.tags_label)
 
         # Кнопки действий
-        action_row = BoxLayout(size_hint=(1, None), height=dp(50), spacing=dp(8))
+        action_row = BoxLayout(size_hint=(1, None), height=dp(60), spacing=dp(8))
 
         self.like_btn = StyledButton(text="[+]", font_size='20sp')
         self.like_btn.bind(on_release=self.toggle_like)
@@ -364,28 +357,33 @@ class FactScreen(Screen):
         action_row.add_widget(self.dislike_btn)
         action_row.add_widget(self.note_btn)
         action_row.add_widget(next_btn)
-        layout.add_widget(action_row)
+        content_layout.add_widget(action_row)
 
-        self.status_label = Label(text="", font_size='11sp', color=(0.5, 0.5, 0.5, 1), size_hint=(1, None), height=dp(20))
-        layout.add_widget(self.status_label)
-        
-        layout.add_widget(BoxLayout(size_hint=(1, 1))) # Отступ снизу
+        # Статус
+        self.status_label = Label(
+            text="", font_size='11sp', color=(0.5, 0.5, 0.5, 1), 
+            size_hint_y=None, height=dp(40), halign='center'
+        )
+        content_layout.add_widget(self.status_label)
+
+        main_scroll.add_widget(content_layout)
+        layout.add_widget(main_scroll)
+
         self.add_widget(layout)
 
     def show_fact(self, fact):
         self.current_fact = fact
         self.showing_extended = False
-        self.ext_scroll.opacity = 0
-        self.ext_scroll.disabled = True
+        self.ext_text.opacity = 0
         self.ext_btn.text = "[i] Подробнее"
 
         self.photo_text.text = f"ФОТО\n{fact.get('title', '')}"
         self.fact_text.text = fact["text"]
-        self.fact_text.text_size = (self.width - dp(30), None)
+        # Принудительно обновляем размер текста
+        self.fact_text.text_size = (self.fact_text.width, None)
 
         if "extended" in fact and fact["extended"]:
             self.ext_text.text = fact["extended"]
-            self.ext_text.text_size = (self.width - dp(30), None)
             self.has_extended = True
         else:
             self.ext_text.text = "Нет дополнительной информации"
@@ -413,14 +411,13 @@ class FactScreen(Screen):
         if not self.has_extended: return
         self.showing_extended = not self.showing_extended
         if self.showing_extended:
-            self.ext_scroll.opacity = 1
-            self.ext_scroll.disabled = False
+            self.ext_text.opacity = 1
             self.ext_btn.text = "[i] Скрыть"
-            Animation(opacity=1, duration=0.3).start(self.ext_scroll)
+            # Пересчитываем высоту
+            self.ext_text.text_size = (self.ext_text.width, None)
+            Animation(opacity=1, duration=0.3).start(self.ext_text)
         else:
-            anim = Animation(opacity=0, duration=0.3)
-            anim.bind(on_complete=lambda *args: setattr(self.ext_scroll, 'disabled', True))
-            anim.start(self.ext_scroll)
+            Animation(opacity=0, duration=0.3).start(self.ext_text)
             self.ext_btn.text = "[i] Подробнее"
 
     def open_note_popup(self, instance):
@@ -437,7 +434,7 @@ class FactScreen(Screen):
         btn_row = BoxLayout(size_hint=(1, None), height=dp(40), spacing=dp(8))
         cancel_btn = StyledButton(text="Отмена")
         save_btn = StyledButton(text="Сохранить")
-        save_btn.color = COLOR_RED # Выделяем кнопку сохранения
+        save_btn.color = COLOR_RED 
 
         btn_row.add_widget(cancel_btn)
         btn_row.add_widget(save_btn)
