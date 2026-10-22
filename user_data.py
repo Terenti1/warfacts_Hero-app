@@ -1,4 +1,4 @@
-# user_data.py - Система рейтинга тегов, заметок и прогрессии (Android-совместимая)
+# user_data.py - Система рейтинга тегов, заметок, прогрессии и викторины
 
 import json
 import os
@@ -31,7 +31,7 @@ class UserPreferences:
                     if key not in data:
                         data[key] = default[key]
                 return data
-            except Exception as e:
+            except Exception:
                 return self.get_default_data()
         return self.get_default_data()
 
@@ -40,7 +40,9 @@ class UserPreferences:
             "viewed_facts": [], "liked_facts": [], "disliked_facts": [],
             "tag_scores": {}, "tag_history": [], "notes": {},
             "tag_progress": {}, "achievements": [], "streak_days": 0,
-            "last_activity": None, "total_views": 0, "last_visit": None
+            "last_activity": None, "total_views": 0, "last_visit": None,
+            # НОВЫЕ ПОЛЯ ДЛЯ ВИКТОРИНЫ
+            "quiz_score": 0, "quiz_attempts": 0, "quiz_correct": 0
         }
 
     def save_data(self):
@@ -48,7 +50,7 @@ class UserPreferences:
             self.data["last_visit"] = datetime.now().isoformat()
             with open(self.storage_file, 'w', encoding='utf-8') as f:
                 json.dump(self.data, f, ensure_ascii=False, indent=2)
-        except Exception as e:
+        except Exception:
             pass
 
     def add_view(self, fact_id, tags):
@@ -76,6 +78,22 @@ class UserPreferences:
         else: self.data["streak_days"] = 1
         self.data["last_activity"] = datetime.now().isoformat()
 
+    # ===== ВИКТОРИНА =====
+    def add_quiz_result(self, is_correct):
+        self.data["quiz_attempts"] += 1
+        if is_correct:
+            self.data["quiz_correct"] += 1
+            self.data["quiz_score"] += 10  # 10 очков за правильный ответ
+        self.save_data()
+
+    def get_quiz_stats(self):
+        return {
+            "score": self.data.get("quiz_score", 0),
+            "attempts": self.data.get("quiz_attempts", 0),
+            "correct": self.data.get("quiz_correct", 0)
+        }
+
+    # ===== ОСТАЛЬНЫЕ МЕТОДЫ =====
     def get_total_progress(self, total_facts):
         if total_facts == 0: return 0
         return round((len(self.data["viewed_facts"]) / total_facts) * 100)
@@ -89,10 +107,14 @@ class UserPreferences:
         if viewed_count >= 50: achievements.append({"id": "fifty_facts", "name": "Знаток истории", "desc": "Прочитано 50 фактов"})
         streak = self.data.get("streak_days", 0)
         if streak >= 3: achievements.append({"id": "streak_3", "name": "Постоянный", "desc": "Активен 3 дня подряд"})
+        
+        quiz_correct = self.data.get("quiz_correct", 0)
+        if quiz_correct >= 5: achievements.append({"id": "quiz_5", "name": "Эрудит", "desc": "5 правильных ответов в викторине"})
+        if quiz_correct >= 15: achievements.append({"id": "quiz_15", "name": "Знаток викторины", "desc": "15 правильных ответов"})
+        
         return achievements
 
-    def get_streak_days(self):
-        return self.data.get("streak_days", 0)
+    def get_streak_days(self): return self.data.get("streak_days", 0)
 
     def add_note(self, fact_id, note_text):
         if note_text and note_text.strip(): self.data["notes"][str(fact_id)] = note_text.strip()
@@ -140,6 +162,7 @@ class UserPreferences:
         return False
 
     def get_tag_score(self, tag): return self.data["tag_scores"].get(tag, 0)
+    
     def get_top_tags(self, limit=5):
         sorted_tags = sorted(self.data["tag_scores"].items(), key=lambda x: x[1], reverse=True)
         return sorted_tags[:limit]
