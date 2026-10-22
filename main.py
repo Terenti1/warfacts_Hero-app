@@ -1,4 +1,4 @@
-# main.py - Приложение "Герои Беларуси" (финальная стабильная версия)
+# main.py - Приложение "Герои Беларуси" (финальная стабильная версия для Android)
 
 import random
 from kivy.app import App
@@ -40,9 +40,6 @@ COLOR_RED = get_color_from_hex('#8B2525')
 COLOR_TEXT = (0.95, 0.95, 0.95, 1)              
 COLOR_ORANGE = get_color_from_hex('#E67E22')    
 
-Window.clearcolor = COLOR_BG
-
-
 def _fact_label(fact, length=60):
     title = fact.get("title")
     if title: return title
@@ -59,11 +56,7 @@ def make_header(title_text, back_callback, height=dp(50)):
     )
     header.add_widget(title)
     
-    # Кнопка назад с иконкой
-    back_btn = Button(
-        size_hint=(0.15, 1), pos_hint={'x': 0, 'y': 0},
-        background_normal='', background_color=(0,0,0,0)
-    )
+    back_btn = Button(size_hint=(0.15, 1), pos_hint={'x': 0, 'y': 0}, background_normal='', background_color=(0,0,0,0))
     with back_btn.canvas.before:
         Color(*COLOR_BTN_BG)
         back_rect = Rectangle(pos=back_btn.pos, size=back_btn.size)
@@ -86,12 +79,11 @@ def make_header(title_text, back_callback, height=dp(50)):
 
 
 class MenuButton(Button):
-    """Кнопка с иконкой и текстом на основе стандартного Button (стабильно)."""
     def __init__(self, text, icon_source, orientation='vertical', **kwargs):
         super().__init__(**kwargs)
         self.background_normal = ''
         self.background_color = (0,0,0,0)
-        self.text = "" # Скрываем стандартный текст
+        self.text = ""
         
         with self.canvas.before:
             self.bg_color = Color(*COLOR_BTN_BG)
@@ -103,7 +95,6 @@ class MenuButton(Button):
 
         self.box = BoxLayout(orientation=orientation, padding=dp(5), spacing=dp(5))
         
-        # Настройка размеров в зависимости от ориентации
         img_hint = (1, 0.6) if orientation == 'vertical' else (0.3, 1)
         text_hint = (1, 0.4) if orientation == 'vertical' else (0.7, 1)
         
@@ -124,7 +115,6 @@ class MenuButton(Button):
 
 
 class ActionButton(Button):
-    """Квадратная кнопка действия с иконкой на основе Button."""
     def __init__(self, icon_source, **kwargs):
         super().__init__(**kwargs)
         self.background_normal = ''
@@ -132,9 +122,9 @@ class ActionButton(Button):
         self.text = ""
         
         with self.canvas.before:
-            self.bg_color = Color(*COLOR_BTN_BG)
+            Color(*COLOR_BTN_BG)
             self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(8)])
-            self.line_color = Color(*COLOR_GOLD)
+            Color(*COLOR_GOLD)
             self.line = Line(rounded_rectangle=(self.x, self.y, self.width, self.height, dp(8)), width=2)
             
         self.bind(pos=self.update_graphics, size=self.update_graphics)
@@ -150,12 +140,17 @@ class ActionButton(Button):
         self.line.rounded_rectangle = (instance.x, instance.y, instance.width, instance.height, dp(8))
         
     def set_active(self, color):
-        """Безопасно меняет цвет фона."""
-        self.bg_color.rgba = color
+        # Безопасная перерисовка для совместимости с Kivy 2.1.0
+        self.canvas.before.clear()
+        with self.canvas.before:
+            Color(*color)
+            self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(8)])
+            Color(*COLOR_GOLD)
+            self.line = Line(rounded_rectangle=(self.x, self.y, self.width, self.height, dp(8)), width=2)
+        self.bind(pos=self.update_graphics, size=self.update_graphics)
 
 
 class FactCard(Button):
-    """Карточка 'Факт дня' на основе Button."""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.background_normal = ''
@@ -363,7 +358,7 @@ class FactScreen(Screen):
         back_btn.bind(on_release=self.go_back)
         top_panel.add_widget(back_btn)
 
-        # Кнопка подробнее (горизонтальная)
+        # Кнопка подробнее
         self.ext_btn = MenuButton("Подробнее", "icon_bookmark.png", orientation='horizontal')
         self.ext_btn.size_hint = (0.85, 1)
         self.ext_btn.bind(on_release=self.toggle_extended)
@@ -735,7 +730,8 @@ class SettingsScreen(Screen):
         btn_clear.bind(on_release=self.clear_history)
         layout.add_widget(btn_clear)
 
-        btn_reset = MenuButton("Сбросить всё", "icon_medal.png", orientation='horizontal')
+        # Если icon_medal.png нет, используем icon_chart_bar.png
+        btn_reset = MenuButton("Сбросить всё", "icon_chart_bar.png", orientation='horizontal') 
         btn_reset.size_hint = (1, None)
         btn_reset.height = dp(50)
         btn_reset.bind(on_release=self.reset_all)
@@ -768,6 +764,9 @@ class TagScreen(Screen):
 
 class WarFactApp(App):
     def build(self):
+        # Устанавливаем цвет окна внутри build, это безопаснее для Android
+        Window.clearcolor = COLOR_BG 
+        
         sm = ScreenManager()
         sm.add_widget(MainMenuScreen(name='main_menu'))
         sm.add_widget(FactScreen(name='fact_screen'))
