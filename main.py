@@ -779,10 +779,10 @@ class SettingsScreen(BaseScreen):
 class WarFactApp(App):
     def build(self):
         Window.clearcolor = COLOR_BG
-
-        # Размер окна для теста на ПК (на телефоне игнорируется, там всегда фуллскрин)
-        Window.size = (400, 800)
-
+        
+        # УБЕДИСЬ, ЧТО ЗДЕСЬ НЕТ НИКАКИХ Window.size! 
+        # На Android приложение всегда должно быть на весь экран.
+        
         self.user_prefs = UserPreferences()
 
         sm = ScreenManager()
