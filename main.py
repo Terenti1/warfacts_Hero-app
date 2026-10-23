@@ -17,10 +17,10 @@ from kivy.uix.image import Image
 from kivy.uix.layout import Layout
 from kivy.core.window import Window
 from kivy.graphics import Color, RoundedRectangle, BorderImage
-from kivy.properties import NumericProperty, ReferenceListProperty
 from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
 from kivy.clock import Clock
+from kivy.properties import NumericProperty, ReferenceListProperty
 
 from data import FACTS_DATABASE, get_facts_count, get_fact_by_id, get_all_tags, get_facts_by_tag
 from user_data import UserPreferences
@@ -30,12 +30,10 @@ try:
 except Exception:
     __version__ = "1.0.0"
 
-# --- ЦВЕТА ---
 COLOR_BG = get_color_from_hex('#1e2a1f')
 COLOR_GOLD = get_color_from_hex('#D4AF37')
 COLOR_CREAM = get_color_from_hex('#F5E6C8')
 COLOR_RED = get_color_from_hex('#8B2525')
-
 
 def _up():
     try:
@@ -45,7 +43,6 @@ def _up():
     except Exception:
         pass
     return UserPreferences()
-
 
 def pick_recommended_fact(user_prefs):
     viewed_facts = set(user_prefs.data["viewed_facts"])
@@ -60,12 +57,7 @@ def pick_recommended_fact(user_prefs):
     return top5[0][0] if random.random() < 0.8 else random.choice(top5)[0]
 
 
-# ============================================================
-#  КАСТОМНЫЕ КОМПОНЕНТЫ
-# ============================================================
-
 class WrapLayout(Layout):
-    """Контейнер, который переносит элементы на новую строку, если они не влезают по ширине."""
     spacing = NumericProperty(dp(10))
     padding = ReferenceListProperty(NumericProperty(dp(0)), NumericProperty(dp(0)), NumericProperty(dp(0)), NumericProperty(dp(0)))
 
@@ -89,7 +81,6 @@ class WrapLayout(Layout):
         for child in children:
             if child.width == 0 and child.height == 0: continue
             
-            # Если элемент не влезает по ширине, переносим на новую строку
             if x + child.width + padding_right > self.width and x > padding_left:
                 x = padding_left
                 y -= row_height + self.spacing
@@ -161,15 +152,11 @@ class FactDayCard(ButtonBehavior, Panel):
         self.padding = [dp(10), dp(10), dp(10), dp(5)]
         self.spacing = dp(5)
         self.size_hint = (1, None)
-        self.height = dp(110)
+        self.height = dp(130)
 
         self.add_widget(Image(source='star_red_green_gold.png', size_hint=(1, 0.6), allow_stretch=True, keep_ratio=True))
         self.add_widget(Label(text="ФАКТ ДНЯ", font_size='22sp', color=COLOR_GOLD, bold=True, size_hint=(1, 0.4)))
 
-
-# ============================================================
-#  ГЛАВНОЕ МЕНЮ
-# ============================================================
 
 class MainMenuScreen(Screen):
     def __init__(self, **kwargs):
@@ -188,14 +175,12 @@ class MainMenuScreen(Screen):
         layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(45), dp(15), dp(15)], spacing=dp(10), size_hint=(1, 1))
         main_layout.add_widget(layout)
 
-        # Шапка
         header = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(85))
         header.add_widget(Label(text="НИКТО НЕ ЗАБЫТ", font_size='12sp', color=COLOR_GOLD, bold=True))
         header.add_widget(Label(text="ГЕРОИ БЕЛАРУСИ", font_size='28sp', color=COLOR_GOLD, bold=True))
         header.add_widget(Label(text="Партизаны, лётчики, подпольщики", font_size='14sp', color=COLOR_CREAM))
         layout.add_widget(header)
 
-        # Прогресс
         total_facts = get_facts_count()
         viewed = len(self.user_prefs.data["viewed_facts"])
         progress = self.user_prefs.get_total_progress(total_facts)
@@ -222,22 +207,19 @@ class MainMenuScreen(Screen):
         prog_box.add_widget(pbar)
         layout.add_widget(prog_box)
 
-        # Гибкий пробел, отодвигающий кнопки вниз
         layout.add_widget(BoxLayout(size_hint=(1, 1)))
 
-        # Карточка "Факт дня"
         self.fact_card = FactDayCard()
+        self.fact_card.height = dp(110)
         self.fact_card.bind(on_release=self.go_to_fact_of_day)
         layout.add_widget(self.fact_card)
 
-        # Кнопка Викторина
         btn_quiz = MenuButton("Викторина", "icon_check.png")
         btn_quiz.size_hint = (1, None)
         btn_quiz.height = dp(60)
         btn_quiz.bind(on_release=self.go_to_quiz)
         layout.add_widget(btn_quiz)
 
-        # Сетка 2х2
         grid = GridLayout(cols=2, spacing=dp(10), size_hint=(1, None), height=dp(150))
         
         btn_history = MenuButton("История", "icon_book.png")
@@ -257,8 +239,6 @@ class MainMenuScreen(Screen):
         grid.add_widget(btn_settings)
 
         layout.add_widget(grid)
-
-        # Нижний отступ ровно на высоту карточки "Факт дня" (поднимает все кнопки вверх)
         layout.add_widget(BoxLayout(size_hint=(1, None), height=dp(110)))
         
         self.add_widget(main_layout)
@@ -275,10 +255,6 @@ class MainMenuScreen(Screen):
     def go_to_quiz(self, instance): self.manager.current = 'quiz_screen'
 
 
-# ============================================================
-#  ЭКРАН ФАКТА
-# ============================================================
-
 class FactScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -291,10 +267,9 @@ class FactScreen(Screen):
         main_layout = FloatLayout(size_hint=(1, 1))
         main_layout.add_widget(Image(source='bg_fact_1080x2400.png', allow_stretch=True, keep_ratio=False, size_hint=(1, 1)))
 
-        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(40), dp(15), dp(20)], spacing=dp(10), size_hint=(1, 1))
+        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(40), dp(15), dp(55)], spacing=dp(10), size_hint=(1, 1))
         main_layout.add_widget(layout)
 
-        # Хедер
         top_panel = BoxLayout(size_hint=(1, None), height=dp(60), spacing=dp(10))
         back_btn = Button(background_normal='btn_back.png', background_down='btn_back_down.png', size_hint=(None, 1), width=dp(60))
         back_btn.bind(on_release=self.go_back)
@@ -305,12 +280,10 @@ class FactScreen(Screen):
         top_panel.add_widget(self.ext_btn)
         layout.add_widget(top_panel)
 
-        # Скролл
         self.scroll = ScrollView(size_hint=(1, 1), bar_width=dp(0), do_scroll_x=False)
         content_box = BoxLayout(orientation='vertical', size_hint=(1, None), spacing=dp(15))
         content_box.bind(minimum_height=content_box.setter('height'))
 
-        # Блок с фото
         photo_layout = RelativeLayout(size_hint=(1, None), height=dp(230))
         photo_layout.add_widget(Image(source='photo_frame_960x680.png', size_hint=(1, 1), allow_stretch=True, keep_ratio=False))
         photo_layout.add_widget(Image(source='photo_placeholder_904x512.png', size_hint=(0.9, 0.65), pos_hint={'center_x': 0.5, 'top': 0.87}, allow_stretch=True, keep_ratio=True))
@@ -323,7 +296,6 @@ class FactScreen(Screen):
         photo_layout.add_widget(self.photo_title)
         content_box.add_widget(photo_layout)
 
-        # Текстовый блок
         self.text_panel = Panel(size_hint=(1, None))
         self.text_panel.bind(minimum_height=self.text_panel.setter('height'))
         
@@ -344,7 +316,6 @@ class FactScreen(Screen):
         self.text_panel.add_widget(text_layout)
         content_box.add_widget(self.text_panel)
 
-        # Теги (WrapLayout)
         self.tags_box = WrapLayout(size_hint=(1, None), height=dp(40), spacing=dp(10))
         content_box.add_widget(self.tags_box)
 
@@ -352,10 +323,8 @@ class FactScreen(Screen):
         self.scroll.add_widget(content_box)
         layout.add_widget(self.scroll)
 
-        # Разделитель
         layout.add_widget(Image(source='divider_star.png', size_hint=(1, None), height=dp(30), allow_stretch=True, keep_ratio=False))
 
-        # Кнопки действий
         action_row = BoxLayout(size_hint=(1, None), height=dp(80), spacing=dp(10))
         self.like_btn = Button(background_normal='btn_like.png', background_down='btn_like_down.png')
         self.like_btn.bind(on_release=self.toggle_like)
@@ -479,10 +448,6 @@ class FactScreen(Screen):
         self.manager.current = 'main_menu'
 
 
-# ============================================================
-#  ВИКТОРИНА
-# ============================================================
-
 class QuizScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -499,7 +464,7 @@ class QuizScreen(Screen):
         main_layout = FloatLayout(size_hint=(1, 1))
         main_layout.add_widget(Image(source='bg_fact_1080x2400.png', allow_stretch=True, keep_ratio=False, size_hint=(1, 1)))
 
-        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(40), dp(15), dp(15)], spacing=dp(10), size_hint=(1, 1))
+        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(40), dp(15), dp(50)], spacing=dp(10), size_hint=(1, 1))
         main_layout.add_widget(layout)
 
         top_panel = BoxLayout(size_hint=(1, None), height=dp(60))
@@ -587,10 +552,6 @@ class QuizScreen(Screen):
         self.manager.current = 'main_menu'
 
 
-# ============================================================
-#  ОСТАЛЬНЫЕ ЭКРАНЫ
-# ============================================================
-
 class BaseScreen(Screen):
     def __init__(self, title, **kwargs):
         super().__init__(**kwargs)
@@ -602,9 +563,8 @@ class BaseScreen(Screen):
         main_layout = FloatLayout(size_hint=(1, 1))
         main_layout.add_widget(Image(source='bg_fact_1080x2400.png', allow_stretch=True, keep_ratio=False, size_hint=(1, 1)))
         
-        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(40), dp(15), dp(15)], spacing=dp(10), size_hint=(1, 1))
+        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(40), dp(15), dp(50)], spacing=dp(10), size_hint=(1, 1))
         
-        # Хедер
         top_panel = FloatLayout(size_hint=(1, None), height=dp(60))
         
         back_btn = Button(
@@ -782,15 +742,9 @@ class SettingsScreen(BaseScreen):
         popup.open()
 
 
-# ============================================================
-#  ПРИЛОЖЕНИЕ
-# ============================================================
-
 class WarFactApp(App):
     def build(self):
         Window.clearcolor = COLOR_BG
-        # Никаких Window.size! На телефоне приложение растянется на весь экран.
-        
         self.user_prefs = UserPreferences()
 
         sm = ScreenManager()
