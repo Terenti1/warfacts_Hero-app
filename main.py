@@ -258,9 +258,15 @@ class MainMenuScreen(Screen):
         layout = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(10))
 
         header = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(90))
-        header.add_widget(Label(text="НИКТО НЕ ЗАБЫТ", font_size='12sp', color=COLOR_GOLD, bold=True, size_hint=(1, None), height=dp(25)))
-        header.add_widget(Label(text="ГЕРОИ БЕЛАРУСИ", font_size='26sp', color=COLOR_GOLD, bold=True, size_hint=(1, None), height=dp(40)))
-        header.add_widget(Label(text="Партизаны, лётчики, подпольщики", font_size='13sp', color=COLOR_TEXT, size_hint=(1, None), height=dp(25)))
+        header.add_widget(
+            Label(text="НИКТО НЕ ЗАБЫТ", font_size='12sp', color=COLOR_GOLD, bold=True, size_hint=(1, None),
+                  height=dp(25)))
+        header.add_widget(
+            Label(text="ГЕРОИ БЕЛАРУСИ", font_size='26sp', color=COLOR_GOLD, bold=True, size_hint=(1, None),
+                  height=dp(40)))
+        header.add_widget(
+            Label(text="Партизаны, лётчики, подпольщики", font_size='13sp', color=COLOR_TEXT, size_hint=(1, None),
+                  height=dp(25)))
         layout.add_widget(header)
 
         total_facts = get_facts_count()
@@ -271,7 +277,8 @@ class MainMenuScreen(Screen):
         prog_box = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(45), spacing=dp(5))
 
         prog_labels = BoxLayout(size_hint=(1, None), height=dp(20))
-        prog_labels.add_widget(Label(text=f"Прогресс: {viewed}/{total_facts}", font_size='13sp', color=COLOR_TEXT, halign='left'))
+        prog_labels.add_widget(
+            Label(text=f"Прогресс: {viewed}/{total_facts}", font_size='13sp', color=COLOR_TEXT, halign='left'))
         prog_labels.add_widget(Label(text=f"Серия: {streak} дн.", font_size='13sp', color=COLOR_ORANGE, halign='right'))
 
         prog_box.add_widget(prog_labels)
@@ -281,15 +288,18 @@ class MainMenuScreen(Screen):
             Color(0.2, 0.2, 0.2, 1)
             bg_rect = RoundedRectangle(pos=pbar_layout.pos, size=pbar_layout.size, radius=[dp(6)])
             Color(*COLOR_ORANGE)
-            fill_rect = RoundedRectangle(pos=pbar_layout.pos, size=(pbar_layout.width * (progress/100), pbar_layout.height), radius=[dp(6)])
+            fill_rect = RoundedRectangle(pos=pbar_layout.pos,
+                                         size=(pbar_layout.width * (progress / 100), pbar_layout.height),
+                                         radius=[dp(6)])
             Color(*COLOR_GOLD)
-            line_rect = Line(rounded_rectangle=(pbar_layout.x, pbar_layout.y, pbar_layout.width, pbar_layout.height, dp(6)), width=1)
+            line_rect = Line(
+                rounded_rectangle=(pbar_layout.x, pbar_layout.y, pbar_layout.width, pbar_layout.height, dp(6)), width=1)
 
         def update_pbar(instance, value):
             bg_rect.pos = instance.pos
             bg_rect.size = instance.size
             fill_rect.pos = instance.pos
-            fill_rect.size = (instance.width * (progress/100), instance.height)
+            fill_rect.size = (instance.width * (progress / 100), instance.height)
             line_rect.rounded_rectangle = (instance.x, instance.y, instance.width, instance.height, dp(6))
 
         pbar_layout.bind(pos=update_pbar, size=update_pbar)
@@ -300,9 +310,19 @@ class MainMenuScreen(Screen):
         self.fact_card.bind(on_release=self.go_to_fact_of_day)
         layout.add_widget(self.fact_card)
 
-        layout.add_widget(BoxLayout(size_hint=(1, 0.05)))
+        layout.add_widget(BoxLayout(size_hint=(1, None), height=dp(8)))
 
-        grid = GridLayout(cols=2, spacing=dp(10), size_hint=(1, None), height=dp(300))
+        # --- ВИКТОРИНА: длинный прямоугольник на всю ширину ---
+        btn_quiz = IconMenuButton("Викторина", "icon_check.png", orientation='horizontal')
+        btn_quiz.size_hint = (1, None)
+        btn_quiz.height = dp(70)
+        btn_quiz.bind(on_release=self.go_to_quiz)
+        layout.add_widget(btn_quiz)
+
+        layout.add_widget(BoxLayout(size_hint=(1, None), height=dp(8)))
+
+        # --- СЕТКА 2x2: История, Заметки, Статистика, Настройки ---
+        grid = GridLayout(cols=2, spacing=dp(10), size_hint=(1, None), height=dp(200))
 
         btn_history = IconMenuButton("История", "icon_book.png")
         btn_history.bind(on_release=self.go_to_history)
@@ -320,14 +340,8 @@ class MainMenuScreen(Screen):
         btn_settings.bind(on_release=self.go_to_settings)
         grid.add_widget(btn_settings)
 
-        btn_quiz = IconMenuButton("Викторина", "icon_check.png")
-        btn_quiz.bind(on_release=self.go_to_quiz)
-        grid.add_widget(btn_quiz)
-
-        grid.add_widget(BoxLayout(size_hint=(1,1)))
-
         layout.add_widget(grid)
-        layout.add_widget(BoxLayout(size_hint=(1, 0.05)))
+        layout.add_widget(BoxLayout(size_hint=(1, 1)))
 
         self.add_widget(layout)
 
