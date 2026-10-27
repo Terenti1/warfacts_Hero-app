@@ -331,8 +331,8 @@ class FactScreen(Screen):
         main_layout.add_widget(layout)
 
         top_panel = BoxLayout(size_hint=(1, None), height=dp(60), spacing=dp(10))
-        back_btn = Button(background_normal='btn_back.png', background_down='btn_back_down.png',
-                          size_hint=(None, 1), width=dp(60))
+        back_btn = Button(background_normal='btn_back.png', background_down='btn_back_down.png', size_hint=(None, 1),
+                          width=dp(60))
         back_btn.bind(on_release=self.go_back)
         top_panel.add_widget(back_btn)
 
@@ -349,15 +349,16 @@ class FactScreen(Screen):
         photo_layout = RelativeLayout(size_hint=(1, None), height=dp(230))
         photo_layout.add_widget(
             Image(source='photo_frame_960x680.png', size_hint=(1, 1), allow_stretch=True, keep_ratio=False))
-        photo_layout.add_widget(
-            Image(source='photo_placeholder_904x512.png', size_hint=(0.9, 0.65), pos_hint={'center_x': 0.5, 'top': 0.87},
-                  allow_stretch=True, keep_ratio=True))
+        photo_layout.add_widget(Image(source='photo_placeholder_904x512.png', size_hint=(0.9, 0.65),
+                                      pos_hint={'center_x': 0.5, 'top': 0.87}, allow_stretch=True, keep_ratio=True))
 
         self.photo_title = Label(
-            text="", font_size='18sp', color=COLOR_CREAM, bold=True,
-            size_hint=(1, 0.15), pos_hint={'x': 0, 'y': 0},
+            text="", font_size='15sp', color=COLOR_CREAM, bold=True,
+            size_hint=(0.8, None), height=dp(35),
+            pos_hint={'center_x': 0.5, 'y': 0.04},
             halign='center', valign='middle'
         )
+        self.photo_title.bind(size=lambda instance, value: setattr(instance, 'text_size', value))
         photo_layout.add_widget(self.photo_title)
         content_box.add_widget(photo_layout)
 
@@ -373,12 +374,13 @@ class FactScreen(Screen):
         self.fact_text.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1]))
         text_layout.add_widget(self.fact_text)
 
+        # --- ГЛАВНОЕ ИЗМЕНЕНИЕ ЗДЕСЬ ---
+        # Изначально высота доп. текста = 0, чтобы рамка была маленькой
         self.ext_text = Label(text="", font_size='15sp', color=COLOR_GOLD, halign='left', valign='top',
-                              size_hint_y=None)
-        self.ext_text.bind(width=lambda instance, value: setattr(instance, 'text_size', (value, None)))
-        self.ext_text.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1]))
-        self.ext_text.opacity = 0
+                              size_hint_y=None, height=0)
+        self.ext_text.bind(width=self.on_ext_text_width)
         text_layout.add_widget(self.ext_text)
+        # --------------------------------
 
         self.text_panel.add_widget(text_layout)
         content_box.add_widget(self.text_panel)
@@ -414,10 +416,20 @@ class FactScreen(Screen):
 
         self.add_widget(main_layout)
 
+    # Вспомогательный метод для пересчета высоты при изменении ширины экрана
+    def on_ext_text_width(self, instance, value):
+        instance.text_size = (value, None)
+        if self.showing_extended:
+            instance.texture_update()
+            instance.height = instance.texture_size[1]
+        else:
+            instance.height = 0
+
     def show_fact(self, fact):
         self.current_fact = fact
         self.showing_extended = False
         self.ext_text.opacity = 0
+        self.ext_text.height = 0  # Прячем текст и обнуляем высоту
         self.ext_btn.background_normal = 'btn_details.png'
         self.ext_btn.background_down = 'btn_details_down.png'
         self.scroll.scroll_y = 1
@@ -449,11 +461,17 @@ class FactScreen(Screen):
         if not self.has_extended: return
         self.showing_extended = not self.showing_extended
         if self.showing_extended:
+            # Показываем текст и вычисляем его реальную высоту
             self.ext_text.opacity = 1
+            self.ext_text.text_size = (self.ext_text.width, None)
+            self.ext_text.texture_update()
+            self.ext_text.height = self.ext_text.texture_size[1]
             self.ext_btn.background_normal = 'btn_details_hide.png'
             self.ext_btn.background_down = 'btn_details_hide_down.png'
         else:
+            # Скрываем текст и обнуляем высоту, чтобы рамка сжалась
             self.ext_text.opacity = 0
+            self.ext_text.height = 0
             self.ext_btn.background_normal = 'btn_details.png'
             self.ext_btn.background_down = 'btn_details_down.png'
 
