@@ -60,7 +60,7 @@ def pick_recommended_fact(user_prefs):
 class WrapLayout(Layout):
     spacing = NumericProperty(dp(10))
     padding = ReferenceListProperty(NumericProperty(dp(0)), NumericProperty(dp(0)), NumericProperty(dp(0)),
-                                     NumericProperty(dp(0)))
+                                    NumericProperty(dp(0)))
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -76,26 +76,47 @@ class WrapLayout(Layout):
         if not children: return
 
         padding_left, padding_top, padding_right, padding_bottom = self.padding
-        x = padding_left
-        y = self.height - padding_top
+
+        total_width = self.width - padding_left - padding_right
+        row_width = 0
         row_height = 0
+        total_height = padding_top + padding_bottom
+
+        # 1. Сначала вычисляем итоговую высоту
+        for child in children:
+            if child.width == 0 and child.height == 0: continue
+
+            if row_width + child.width > total_width and row_width > 0:
+                total_height += row_height + self.spacing
+                row_width = 0
+                row_height = 0
+
+            row_width += child.width + self.spacing
+            row_height = max(row_height, child.height)
+
+        total_height += row_height
+
+        # 2. Устанавливаем высоту контейнера
+        if self.height != total_height:
+            self.height = total_height
+
+        # 3. Теперь расставляем элементы сверху вниз
+        current_top = self.height - padding_top
+        row_height = 0
+        x = padding_left
 
         for child in children:
             if child.width == 0 and child.height == 0: continue
 
             if x + child.width + padding_right > self.width and x > padding_left:
                 x = padding_left
-                y -= row_height + self.spacing
+                current_top -= row_height + self.spacing
                 row_height = 0
 
             child.x = x
-            child.y = y - child.height
+            child.top = current_top
             x += child.width + self.spacing
             row_height = max(row_height, child.height)
-
-        min_height = (self.height - y) + row_height + padding_bottom
-        if self.height != min_height:
-            self.height = min_height
 
 
 class Panel(BoxLayout):
