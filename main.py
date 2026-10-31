@@ -59,13 +59,11 @@ def pick_recommended_fact(user_prefs):
 
 class WrapLayout(Layout):
     spacing = NumericProperty(dp(10))
-    padding = ReferenceListProperty(NumericProperty(dp(0)), NumericProperty(dp(0)), NumericProperty(dp(0)),
-                                    NumericProperty(dp(0)))
+    padding = ReferenceListProperty(NumericProperty(dp(0)), NumericProperty(dp(0)), NumericProperty(dp(0)), NumericProperty(dp(0)))
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.bind(width=self.update_layout, children=self.update_layout, spacing=self.update_layout,
-                  padding=self.update_layout)
+        self.bind(width=self.update_layout, children=self.update_layout, spacing=self.update_layout, padding=self.update_layout)
         Clock.schedule_once(self.update_layout, 0)
 
     def update_layout(self, *args):
@@ -76,35 +74,32 @@ class WrapLayout(Layout):
         if not children: return
 
         padding_left, padding_top, padding_right, padding_bottom = self.padding
-
+        
         total_width = self.width - padding_left - padding_right
         row_width = 0
         row_height = 0
         total_height = padding_top + padding_bottom
-
-        # 1. Сначала вычисляем итоговую высоту
+        
         for child in children:
             if child.width == 0 and child.height == 0: continue
-
+            
             if row_width + child.width > total_width and row_width > 0:
                 total_height += row_height + self.spacing
                 row_width = 0
                 row_height = 0
-
+                
             row_width += child.width + self.spacing
             row_height = max(row_height, child.height)
-
+            
         total_height += row_height
-
-        # 2. Устанавливаем высоту контейнера
+        
         if self.height != total_height:
             self.height = total_height
-
-        # 3. Теперь расставляем элементы сверху вниз
+            
         current_top = self.height - padding_top
         row_height = 0
         x = padding_left
-
+        
         for child in children:
             if child.width == 0 and child.height == 0: continue
 
@@ -183,8 +178,7 @@ class QuizButton(ButtonBehavior, BoxLayout):
 
         self.bind(pos=self.update_rect, size=self.update_rect)
 
-        self.label = Label(text=text, font_size='16sp', color=COLOR_GOLD, bold=True, halign='center',
-                           valign='middle')
+        self.label = Label(text=text, font_size='16sp', color=COLOR_GOLD, bold=True, halign='center', valign='middle')
         self.label.bind(size=lambda i, v: setattr(i, 'text_size', v))
         self.add_widget(self.label)
 
@@ -221,8 +215,7 @@ class FactDayCard(ButtonBehavior, Panel):
         self.size_hint = (1, None)
         self.height = dp(130)
 
-        self.add_widget(
-            Image(source='star_red_green_gold.png', size_hint=(1, 0.6), allow_stretch=True, keep_ratio=True))
+        self.add_widget(Image(source='star_red_green_gold.png', size_hint=(1, 0.6), allow_stretch=True, keep_ratio=True))
         self.add_widget(Label(text="ФАКТ ДНЯ", font_size='22sp', color=COLOR_GOLD, bold=True, size_hint=(1, 0.4)))
 
 
@@ -238,11 +231,9 @@ class MainMenuScreen(Screen):
 
     def build_ui(self):
         main_layout = FloatLayout()
-        main_layout.add_widget(
-            Image(source='bg_fact_1080x2400.png', allow_stretch=True, keep_ratio=False, size_hint=(1, 1)))
+        main_layout.add_widget(Image(source='bg_fact_1080x2400.png', allow_stretch=True, keep_ratio=False, size_hint=(1, 1)))
 
-        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(45), dp(15), dp(15)], spacing=dp(10),
-                           size_hint=(1, 1))
+        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(45), dp(15), dp(15)], spacing=dp(10), size_hint=(1, 1))
         main_layout.add_widget(layout)
 
         header = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(85))
@@ -258,10 +249,8 @@ class MainMenuScreen(Screen):
 
         prog_box = BoxLayout(orientation='vertical', size_hint=(1, None), height=dp(45), spacing=dp(5))
         prog_labels = BoxLayout(size_hint=(1, None), height=dp(20))
-        prog_labels.add_widget(
-            Label(text=f"Прогресс: {viewed}/{total_facts}", font_size='14sp', color=COLOR_CREAM, halign='left'))
-        prog_labels.add_widget(
-            Label(text=f"Серия: {streak} дн.", font_size='14sp', color=COLOR_GOLD, halign='right'))
+        prog_labels.add_widget(Label(text=f"Прогресс: {viewed}/{total_facts}", font_size='14sp', color=COLOR_CREAM, halign='left'))
+        prog_labels.add_widget(Label(text=f"Серия: {streak} дн.", font_size='14sp', color=COLOR_GOLD, halign='right'))
         prog_box.add_widget(prog_labels)
 
         pbar = FloatLayout(size_hint=(1, None), height=dp(15))
@@ -269,8 +258,7 @@ class MainMenuScreen(Screen):
             Color(0.1, 0.1, 0.1, 1)
             bg_rect = RoundedRectangle(pos=pbar.pos, size=pbar.size, radius=[dp(7)])
             Color(*COLOR_GOLD)
-            fill_rect = RoundedRectangle(pos=pbar.pos, size=(pbar.width * (progress / 100), pbar.height),
-                                         radius=[dp(7)])
+            fill_rect = RoundedRectangle(pos=pbar.pos, size=(pbar.width * (progress / 100), pbar.height), radius=[dp(7)])
 
         def update_pbar(instance, value):
             bg_rect.pos = instance.pos
@@ -324,13 +312,9 @@ class MainMenuScreen(Screen):
         self.manager.get_screen('fact_screen').show_fact(best_fact)
 
     def go_to_history(self, instance): self.manager.current = 'history_screen'
-
     def go_to_notes(self, instance): self.manager.current = 'notes_screen'
-
     def go_to_stats(self, instance): self.manager.current = 'stats_screen'
-
     def go_to_settings(self, instance): self.manager.current = 'settings_screen'
-
     def go_to_quiz(self, instance): self.manager.current = 'quiz_screen'
 
 
@@ -344,21 +328,17 @@ class FactScreen(Screen):
 
     def build_ui(self):
         main_layout = FloatLayout(size_hint=(1, 1))
-        main_layout.add_widget(
-            Image(source='bg_fact_1080x2400.png', allow_stretch=True, keep_ratio=False, size_hint=(1, 1)))
+        main_layout.add_widget(Image(source='bg_fact_1080x2400.png', allow_stretch=True, keep_ratio=False, size_hint=(1, 1)))
 
-        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(40), dp(15), dp(55)], spacing=dp(10),
-                           size_hint=(1, 1))
+        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(40), dp(15), dp(55)], spacing=dp(10), size_hint=(1, 1))
         main_layout.add_widget(layout)
 
         top_panel = BoxLayout(size_hint=(1, None), height=dp(60), spacing=dp(10))
-        back_btn = Button(background_normal='btn_back.png', background_down='btn_back_down.png', size_hint=(None, 1),
-                          width=dp(60))
+        back_btn = Button(background_normal='btn_back.png', background_down='btn_back_down.png', size_hint=(None, 1), width=dp(60))
         back_btn.bind(on_release=self.go_back)
         top_panel.add_widget(back_btn)
 
-        self.ext_btn = Button(background_normal='btn_details.png', background_down='btn_details_down.png',
-                              size_hint=(1, 1))
+        self.ext_btn = Button(background_normal='btn_details.png', background_down='btn_details_down.png', size_hint=(1, 1))
         self.ext_btn.bind(on_release=self.toggle_extended)
         top_panel.add_widget(self.ext_btn)
         layout.add_widget(top_panel)
@@ -368,15 +348,13 @@ class FactScreen(Screen):
         content_box.bind(minimum_height=content_box.setter('height'))
 
         photo_layout = RelativeLayout(size_hint=(1, None), height=dp(230))
-        photo_layout.add_widget(
-            Image(source='photo_frame_960x680.png', size_hint=(1, 1), allow_stretch=True, keep_ratio=False))
-        photo_layout.add_widget(Image(source='photo_placeholder_904x512.png', size_hint=(0.9, 0.65),
-                                      pos_hint={'center_x': 0.5, 'top': 0.87}, allow_stretch=True, keep_ratio=True))
+        photo_layout.add_widget(Image(source='photo_frame_960x680.png', size_hint=(1, 1), allow_stretch=True, keep_ratio=False))
+        photo_layout.add_widget(Image(source='photo_placeholder_904x512.png', size_hint=(0.9, 0.65), pos_hint={'center_x': 0.5, 'top': 0.87}, allow_stretch=True, keep_ratio=True))
 
         self.photo_title = Label(
-            text="", font_size='15sp', color=COLOR_CREAM, bold=True,
-            size_hint=(0.8, None), height=dp(35),
-            pos_hint={'center_x': 0.5, 'y': 0.04},
+            text="", font_size='15sp', color=COLOR_CREAM, bold=True, 
+            size_hint=(0.8, None), height=dp(35), 
+            pos_hint={'center_x': 0.5, 'y': 0.04}, 
             halign='center', valign='middle'
         )
         self.photo_title.bind(size=lambda instance, value: setattr(instance, 'text_size', value))
@@ -389,19 +367,14 @@ class FactScreen(Screen):
         text_layout = BoxLayout(orientation='vertical', padding=dp(20), size_hint=(1, None))
         text_layout.bind(minimum_height=text_layout.setter('height'))
 
-        self.fact_text = Label(text="", font_size='16sp', color=COLOR_CREAM, halign='left', valign='top',
-                               size_hint_y=None)
+        self.fact_text = Label(text="", font_size='16sp', color=COLOR_CREAM, halign='left', valign='top', size_hint_y=None)
         self.fact_text.bind(width=lambda instance, value: setattr(instance, 'text_size', (value, None)))
         self.fact_text.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1]))
         text_layout.add_widget(self.fact_text)
 
-        # --- ГЛАВНОЕ ИЗМЕНЕНИЕ ЗДЕСЬ ---
-        # Изначально высота доп. текста = 0, чтобы рамка была маленькой
-        self.ext_text = Label(text="", font_size='15sp', color=COLOR_GOLD, halign='left', valign='top',
-                              size_hint_y=None, height=0)
+        self.ext_text = Label(text="", font_size='15sp', color=COLOR_GOLD, halign='left', valign='top', size_hint_y=None, height=0)
         self.ext_text.bind(width=self.on_ext_text_width)
         text_layout.add_widget(self.ext_text)
-        # --------------------------------
 
         self.text_panel.add_widget(text_layout)
         content_box.add_widget(self.text_panel)
@@ -413,8 +386,7 @@ class FactScreen(Screen):
         self.scroll.add_widget(content_box)
         layout.add_widget(self.scroll)
 
-        layout.add_widget(
-            Image(source='divider_star.png', size_hint=(1, None), height=dp(30), allow_stretch=True, keep_ratio=False))
+        layout.add_widget(Image(source='divider_star.png', size_hint=(1, None), height=dp(30), allow_stretch=True, keep_ratio=False))
 
         action_row = BoxLayout(size_hint=(1, None), height=dp(80), spacing=dp(10))
         self.like_btn = Button(background_normal='btn_like.png', background_down='btn_like_down.png')
@@ -437,7 +409,6 @@ class FactScreen(Screen):
 
         self.add_widget(main_layout)
 
-    # Вспомогательный метод для пересчета высоты при изменении ширины экрана
     def on_ext_text_width(self, instance, value):
         instance.text_size = (value, None)
         if self.showing_extended:
@@ -450,7 +421,7 @@ class FactScreen(Screen):
         self.current_fact = fact
         self.showing_extended = False
         self.ext_text.opacity = 0
-        self.ext_text.height = 0  # Прячем текст и обнуляем высоту
+        self.ext_text.height = 0
         self.ext_btn.background_normal = 'btn_details.png'
         self.ext_btn.background_down = 'btn_details_down.png'
         self.scroll.scroll_y = 1
@@ -482,7 +453,6 @@ class FactScreen(Screen):
         if not self.has_extended: return
         self.showing_extended = not self.showing_extended
         if self.showing_extended:
-            # Показываем текст и вычисляем его реальную высоту
             self.ext_text.opacity = 1
             self.ext_text.text_size = (self.ext_text.width, None)
             self.ext_text.texture_update()
@@ -490,7 +460,6 @@ class FactScreen(Screen):
             self.ext_btn.background_normal = 'btn_details_hide.png'
             self.ext_btn.background_down = 'btn_details_hide_down.png'
         else:
-            # Скрываем текст и обнуляем высоту, чтобы рамка сжалась
             self.ext_text.opacity = 0
             self.ext_text.height = 0
             self.ext_btn.background_normal = 'btn_details.png'
@@ -531,8 +500,7 @@ class FactScreen(Screen):
         fact_id = self.current_fact["id"]
         tags = self.current_fact["tags"]
         status = self.user_prefs.get_fact_status(fact_id)
-        if status == "liked":
-            self.user_prefs.remove_like(fact_id, tags)
+        if status == "liked": self.user_prefs.remove_like(fact_id, tags)
         else:
             if status == "disliked": self.user_prefs.remove_dislike(fact_id, tags)
             self.user_prefs.add_like(fact_id, tags)
@@ -543,8 +511,7 @@ class FactScreen(Screen):
         fact_id = self.current_fact["id"]
         tags = self.current_fact["tags"]
         status = self.user_prefs.get_fact_status(fact_id)
-        if status == "disliked":
-            self.user_prefs.remove_dislike(fact_id, tags)
+        if status == "disliked": self.user_prefs.remove_dislike(fact_id, tags)
         else:
             if status == "liked": self.user_prefs.remove_like(fact_id, tags)
             self.user_prefs.add_dislike(fact_id, tags)
@@ -564,65 +531,92 @@ class QuizScreen(Screen):
         self.current_fact = None
         self.current_q = None
         self.option_buttons = []
+        
+        self.question_pool = []
+        self.current_q_idx = 0
+        
+        self.session_score = 0
+        self.session_correct = 0
+        self.session_attempts = 0
+        
         self.build_ui()
 
     def on_enter(self, *args):
-        self.start_new_round()
+        self.restart_quiz()
 
     def build_ui(self):
         main_layout = FloatLayout(size_hint=(1, 1))
-        main_layout.add_widget(
-            Image(source='bg_fact_1080x2400.png', allow_stretch=True, keep_ratio=False, size_hint=(1, 1)))
+        main_layout.add_widget(Image(source='bg_fact_1080x2400.png', allow_stretch=True, keep_ratio=False, size_hint=(1, 1)))
 
-        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(40), dp(15), dp(50)], spacing=dp(10),
-                           size_hint=(1, 1))
+        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(40), dp(15), dp(50)], spacing=dp(10), size_hint=(1, 1))
         main_layout.add_widget(layout)
 
         top_panel = BoxLayout(size_hint=(1, None), height=dp(60))
-        back_btn = Button(background_normal='btn_back.png', background_down='btn_back_down.png',
-                          size_hint=(None, 1), width=dp(60))
+        back_btn = Button(background_normal='btn_back.png', background_down='btn_back_down.png', size_hint=(None, 1), width=dp(60))
         back_btn.bind(on_release=self.go_back)
         top_panel.add_widget(back_btn)
         top_panel.add_widget(Label(text="ПРОВЕРКА ЗНАНИЙ", font_size='20sp', color=COLOR_GOLD, bold=True))
         top_panel.add_widget(BoxLayout(size_hint=(None, 1), width=dp(60)))
         layout.add_widget(top_panel)
 
-        q_stats = self.user_prefs.get_quiz_stats()
         self.score_label = Label(
-            text=f"Счёт: {q_stats['score']}  |  Правильно: {q_stats['correct']} из {q_stats['attempts']}",
-            font_size='18sp', color=COLOR_CREAM, bold=True, size_hint=(1, None), height=dp(30)
+            text="", font_size='18sp', color=COLOR_CREAM, bold=True, size_hint=(1, None), height=dp(30)
         )
         layout.add_widget(self.score_label)
 
         self.question_panel = Panel(size_hint=(1, 0.3))
-        self.question_label = Label(text="", font_size='18sp', color=COLOR_GOLD, bold=True, halign='center',
-                                    valign='middle', padding=[dp(20), dp(20)])
+        self.question_label = Label(text="", font_size='18sp', color=COLOR_GOLD, bold=True, halign='center', valign='middle', padding=[dp(20), dp(20)])
         self.question_label.bind(width=lambda i, v: setattr(i, 'text_size', (v, None)))
         self.question_panel.add_widget(self.question_label)
         layout.add_widget(self.question_panel)
 
         self.options_grid = GridLayout(cols=1, spacing=dp(10), size_hint=(1, 0.5))
         layout.add_widget(self.options_grid)
-
+        
         self.add_widget(main_layout)
 
-    def _studied_with_quiz(self):
+    def restart_quiz(self):
+        self.session_score = 0
+        self.session_correct = 0
+        self.session_attempts = 0
+        
         viewed = set(self.user_prefs.data["viewed_facts"])
-        return [f for f in FACTS_DATABASE if f["id"] in viewed and f.get("quiz")]
+        facts_with_quiz = [f for f in FACTS_DATABASE if f["id"] in viewed and f.get("quiz")]
+        
+        if len(facts_with_quiz) < 4:
+            self.question_pool = []
+            self.current_q_idx = 0
+            self.question_label.text = f"Нужно изучить минимум 4 факта.\nИзучено: {len(facts_with_quiz)}."
+            self.score_label.text = "Счёт: 0"
+            self.options_grid.clear_widgets()
+            return
+
+        self.question_pool = []
+        for fact in facts_with_quiz:
+            for q in fact["quiz"]:
+                self.question_pool.append((fact, q))
+                
+        random.shuffle(self.question_pool)
+        self.current_q_idx = 0
+        self.start_new_round()
 
     def start_new_round(self):
         self.options_grid.clear_widgets()
         self.option_buttons = []
 
-        pool = self._studied_with_quiz()
-        if len(pool) < 4:
-            self.current_fact = None
-            self.current_q = None
-            self.question_label.text = f"Нужно изучить минимум 4 факта.\nИзучено: {len(pool)}."
+        if self.current_q_idx >= len(self.question_pool):
+            self.question_label.text = "Вы ответили на все доступные вопросы!\nИзучите новые факты или начните заново."
+            self.score_label.text = f"Итог сессии: {self.session_score} очков ({self.session_correct} из {self.session_attempts})"
+            
+            restart_btn = QuizButton("Начать заново")
+            restart_btn.bind(on_release=lambda x: self.restart_quiz())
+            self.options_grid.add_widget(restart_btn)
             return
 
-        self.current_fact = random.choice(pool)
-        self.current_q = random.choice(self.current_fact["quiz"])
+        self.current_fact, self.current_q = self.question_pool[self.current_q_idx]
+        
+        self.current_q_idx += 1
+        self.score_label.text = f"Вопрос {self.current_q_idx} из {len(self.question_pool)}  |  Счёт сессии: {self.session_score}"
         self.question_label.text = self.current_q["q"]
 
         options = [self.current_q["correct"]] + list(self.current_q["wrong"])
@@ -642,10 +636,13 @@ class QuizScreen(Screen):
             b.set_state('disabled')
 
         is_correct = (selected_option == self.current_q["correct"])
+        
+        self.session_attempts += 1
+        if is_correct:
+            self.session_correct += 1
+            self.session_score += 10
+            
         self.user_prefs.add_quiz_result(is_correct)
-
-        q_stats = self.user_prefs.get_quiz_stats()
-        self.score_label.text = f"Счёт: {q_stats['score']}  |  Правильно: {q_stats['correct']} из {q_stats['attempts']}"
 
         if is_correct:
             btn.set_state('correct')
@@ -670,11 +667,9 @@ class BaseScreen(Screen):
 
     def build_ui(self):
         main_layout = FloatLayout(size_hint=(1, 1))
-        main_layout.add_widget(
-            Image(source='bg_fact_1080x2400.png', allow_stretch=True, keep_ratio=False, size_hint=(1, 1)))
+        main_layout.add_widget(Image(source='bg_fact_1080x2400.png', allow_stretch=True, keep_ratio=False, size_hint=(1, 1)))
 
-        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(40), dp(15), dp(50)], spacing=dp(10),
-                           size_hint=(1, 1))
+        layout = BoxLayout(orientation='vertical', padding=[dp(15), dp(40), dp(15), dp(50)], spacing=dp(10), size_hint=(1, 1))
 
         top_panel = FloatLayout(size_hint=(1, None), height=dp(60))
 
@@ -718,27 +713,19 @@ class HistoryScreen(BaseScreen):
         viewed = self.user_prefs.data["viewed_facts"]
         not_liked = [fid for fid in viewed if fid not in liked]
 
-        self.content.add_widget(
-            Label(text=f"★ ПОНРАВИВШИЕСЯ ({len(liked)})", font_size='18sp', color=COLOR_GOLD, size_hint_y=None,
-                  height=dp(40)))
+        self.content.add_widget(Label(text=f"★ ПОНРАВИВШИЕСЯ ({len(liked)})", font_size='18sp', color=COLOR_GOLD, size_hint_y=None, height=dp(40)))
         for fact_id in reversed(liked):
             fact = get_fact_by_id(fact_id)
             if fact:
-                btn = Button(text=fact.get('title', ''), background_normal='panel_card_9slice.png',
-                             border=(dp(20), dp(20), dp(20), dp(20)), color=COLOR_CREAM, size_hint_y=None,
-                             height=dp(60), font_size='16sp')
+                btn = Button(text=fact.get('title', ''), background_normal='panel_card_9slice.png', border=(dp(20), dp(20), dp(20), dp(20)), color=COLOR_CREAM, size_hint_y=None, height=dp(60), font_size='16sp')
                 btn.bind(on_release=lambda x, f=fact: self.view_fact(f))
                 self.content.add_widget(btn)
 
-        self.content.add_widget(
-            Label(text=f"▸ ИЗУЧЕННЫЕ ({len(not_liked)})", font_size='18sp', color=COLOR_CREAM, size_hint_y=None,
-                  height=dp(40)))
+        self.content.add_widget(Label(text=f"▸ ИЗУЧЕННЫЕ ({len(not_liked)})", font_size='18sp', color=COLOR_CREAM, size_hint_y=None, height=dp(40)))
         for fact_id in reversed(not_liked):
             fact = get_fact_by_id(fact_id)
             if fact:
-                btn = Button(text=fact.get('title', ''), background_normal='panel_card_light_9slice.png',
-                             border=(dp(20), dp(20), dp(20), dp(20)), color=COLOR_GOLD, size_hint_y=None,
-                             height=dp(60), font_size='16sp')
+                btn = Button(text=fact.get('title', ''), background_normal='panel_card_light_9slice.png', border=(dp(20), dp(20), dp(20), dp(20)), color=COLOR_GOLD, size_hint_y=None, height=dp(60), font_size='16sp')
                 btn.bind(on_release=lambda x, f=fact: self.view_fact(f))
                 self.content.add_widget(btn)
 
@@ -789,26 +776,41 @@ class StatsScreen(BaseScreen):
         progress = self.user_prefs.get_total_progress(total_facts)
 
         def add_stat_lbl(text, font_size='16sp', color=COLOR_CREAM, height=dp(30), bold=False):
-            lbl = Label(text=text, font_size=font_size, color=color, size_hint_y=None, height=height, halign='left',
-                        valign='middle', bold=bold)
+            lbl = Label(text=text, font_size=font_size, color=color, size_hint_y=None, height=height, halign='left', valign='middle', bold=bold)
             lbl.bind(width=lambda i, v: setattr(i, 'text_size', (v, None)))
             self.content.add_widget(lbl)
 
         add_stat_lbl("[ ОБЩИЙ ПРОГРЕСС ]", font_size='20sp', color=COLOR_GOLD, height=dp(40), bold=True)
         add_stat_lbl(f"Изучено: {stats['unique_facts_viewed']} / {total_facts}")
         add_stat_lbl(f"Прогресс: {progress}%")
-
+        
         add_stat_lbl("[ ВИКТОРИНА ]", font_size='20sp', color=COLOR_GOLD, height=dp(40), bold=True)
         add_stat_lbl(f"Счёт: {q_stats['score']} очков")
         add_stat_lbl(f"Правильных ответов: {q_stats['correct']} из {q_stats['attempts']}")
-
+        
         add_stat_lbl("[ ДОСТИЖЕНИЯ ]", font_size='20sp', color=COLOR_GOLD, height=dp(40), bold=True)
+        
         achievements = self.user_prefs.get_achievement_progress()
-        if achievements:
-            for ach in achievements:
-                add_stat_lbl(f"★ {ach['name']} — {ach['desc']}", font_size='14sp', height=dp(40))
+        obtained = [a for a in achievements if a["is_obtained"]]
+        unobtained = [a for a in achievements if not a["is_obtained"]]
+
+        if obtained:
+            add_stat_lbl(f"★ ПОЛУЧЕННЫЕ ({len(obtained)})", font_size='18sp', color=COLOR_GOLD, height=dp(30), bold=True)
+            for ach in obtained:
+                ach_text = f"★ {ach['name']}\n{ach['desc']}"
+                lbl = Label(text=ach_text, font_size='14sp', color=COLOR_CREAM, size_hint_y=None, height=dp(50), halign='left', valign='middle')
+                lbl.bind(width=lambda i, v: setattr(i, 'text_size', (v, None)))
+                self.content.add_widget(lbl)
         else:
-            add_stat_lbl("Читайте факты, чтобы получать достижения!", font_size='14sp', color=(0.5, 0.5, 0.5, 1))
+            add_stat_lbl("У вас пока нет достижений.", font_size='14sp', color=(0.5, 0.5, 0.5, 1))
+
+        if unobtained:
+            add_stat_lbl(f"☆ НЕ ПОЛУЧЕННЫЕ ({len(unobtained)})", font_size='18sp', color=(0.5, 0.5, 0.5, 1), height=dp(40), bold=True)
+            for ach in unobtained:
+                ach_text = f"☆ {ach['name']}\n{ach['desc']}"
+                lbl = Label(text=ach_text, font_size='14sp', color=(0.5, 0.5, 0.5, 1), size_hint_y=None, height=dp(50), halign='left', valign='middle')
+                lbl.bind(width=lambda i, v: setattr(i, 'text_size', (v, None)))
+                self.content.add_widget(lbl)
 
 
 class SettingsScreen(BaseScreen):
@@ -818,8 +820,7 @@ class SettingsScreen(BaseScreen):
     def on_enter(self, *args):
         self.content.clear_widgets()
 
-        self.content.add_widget(
-            Label(text=f"Версия: {__version__}", font_size='16sp', color=COLOR_CREAM, size_hint_y=None, height=dp(40)))
+        self.content.add_widget(Label(text=f"Версия: {__version__}", font_size='16sp', color=COLOR_CREAM, size_hint_y=None, height=dp(40)))
 
         btn_clear = Button(text="Очистить историю", background_normal='btn_wide_plain.png',
                            border=(dp(20), dp(20), dp(20), dp(20)), color=COLOR_GOLD, size_hint_y=None, height=dp(60),
@@ -854,8 +855,7 @@ class SettingsScreen(BaseScreen):
         content.add_widget(Label(text=text, font_size='16sp', color=COLOR_CREAM, halign='center'))
 
         btn_row = BoxLayout(size_hint=(1, None), height=dp(50), spacing=dp(10))
-        cancel_btn = Button(text="Отмена", background_normal='', background_color=(0.3, 0.3, 0.3, 1),
-                            color=COLOR_CREAM)
+        cancel_btn = Button(text="Отмена", background_normal='', background_color=(0.3, 0.3, 0.3, 1), color=COLOR_CREAM)
         confirm_btn = Button(text="Да", background_normal='', background_color=COLOR_RED, color=COLOR_CREAM)
 
         btn_row.add_widget(cancel_btn)
