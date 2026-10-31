@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from data import get_facts_count, get_facts_by_tag, get_all_tags
 
+
 def _get_storage_path(filename):
     try:
         from kivy.app import App
@@ -14,6 +15,7 @@ def _get_storage_path(filename):
     except Exception as e:
         print(f"[STORAGE] Не удалось получить user_data_dir: {e}")
     return filename
+
 
 class UserPreferences:
     def __init__(self, storage_file="user_data.json"):
@@ -41,7 +43,7 @@ class UserPreferences:
             "tag_progress": {}, "achievements": [], "streak_days": 0,
             "last_activity": None, "total_views": 0, "last_visit": None,
             "quiz_score": 0, "quiz_attempts": 0, "quiz_correct": 0,
-            "visited_months": []
+            "visited_months": [], "feedback": []
         }
 
     def save_data(self):
@@ -67,7 +69,7 @@ class UserPreferences:
     def update_streak(self):
         today = datetime.now().date()
         current_month = today.strftime("%Y-%m")
-        
+
         if "visited_months" not in self.data:
             self.data["visited_months"] = []
         if current_month not in self.data["visited_months"]:
@@ -78,10 +80,14 @@ class UserPreferences:
             try:
                 last_date = datetime.fromisoformat(last).date()
                 diff = (today - last_date).days
-                if diff == 1: self.data["streak_days"] = self.data.get("streak_days", 0) + 1
-                elif diff > 1: self.data["streak_days"] = 1
-            except Exception: self.data["streak_days"] = 1
-        else: self.data["streak_days"] = 1
+                if diff == 1:
+                    self.data["streak_days"] = self.data.get("streak_days", 0) + 1
+                elif diff > 1:
+                    self.data["streak_days"] = 1
+            except Exception:
+                self.data["streak_days"] = 1
+        else:
+            self.data["streak_days"] = 1
         self.data["last_activity"] = datetime.now().isoformat()
 
     def add_quiz_result(self, is_correct):
@@ -106,12 +112,12 @@ class UserPreferences:
         all_achievements = []
         total_facts = get_facts_count()
         viewed_count = len(self.data["viewed_facts"])
-        
+
         # 1. Прогресс (10 шагов по 10%)
         for pct in range(10, 110, 10):
             req = int(total_facts * pct / 100)
             all_achievements.append({
-                "name": f"{pct}% пути", 
+                "name": f"{pct}% пути",
                 "desc": f"Изучено {req} фактов",
                 "is_obtained": viewed_count >= req
             })
@@ -128,12 +134,12 @@ class UserPreferences:
 
         # 3. Отдельные личности
         legendary_heroes = {
-            1: "Марат Казей", 8: "Вера Хоружая", 25: "Дмитрий Карбышев", 
+            1: "Марат Казей", 8: "Вера Хоружая", 25: "Дмитрий Карбышев",
             28: "Василий Талаш", 37: "Константин Рокоссовский"
         }
         for fid, name in legendary_heroes.items():
             all_achievements.append({
-                "name": f"Знакомство: {name}", 
+                "name": f"Знакомство: {name}",
                 "desc": "Прочитан факт",
                 "is_obtained": fid in self.data["viewed_facts"]
             })
@@ -141,9 +147,9 @@ class UserPreferences:
         # 4. Серии дней
         streak = self.data.get("streak_days", 0)
         streaks = [
-            (3, "Постоянный", "3 дня подряд"), 
+            (3, "Постоянный", "3 дня подряд"),
             (7, "Неутомимый", "7 дней подряд"),
-            (30, "Преданный делу", "30 дней подряд"), 
+            (30, "Преданный делу", "30 дней подряд"),
             (180, "Полугодие", "180 дней подряд"),
             (365, "Год с историей", "365 дней подряд")
         ]
@@ -163,60 +169,72 @@ class UserPreferences:
 
         # 6. Конкретные месяцы (Январь, Февраль и т.д.)
         month_names = {
-            "01": "Январь", "02": "Февраль", "03": "Март", "04": "Апрель", "05": "Май", 
-            "06": "Июнь", "07": "Июль", "08": "Август", "09": "Сентябрь", "10": "Октябрь", 
+            "01": "Январь", "02": "Февраль", "03": "Март", "04": "Апрель", "05": "Май",
+            "06": "Июнь", "07": "Июль", "08": "Август", "09": "Сентябрь", "10": "Октябрь",
             "11": "Ноябрь", "12": "Декабрь"
         }
         visited_m_codes = [m.split('-')[1] for m in visited_months]
         for m_code, m_name in month_names.items():
             all_achievements.append({
-                "name": f"Месяц: {m_name}", 
-                "desc": f"Активность в {m_name}e", 
+                "name": f"Месяц: {m_name}",
+                "desc": f"Активность в {m_name}e",
                 "is_obtained": m_code in visited_m_codes
             })
 
         # 7. Викторина
         quiz_correct = self.data.get("quiz_correct", 0)
         quiz_milestones = [
-            (5, "Эрудит", "5 правильных ответов"), 
+            (5, "Эрудит", "5 правильных ответов"),
             (15, "Знаток викторины", "15 правильных ответов"),
-            (50, "Мастер викторины", "50 правильных ответов"), 
+            (50, "Мастер викторины", "50 правильных ответов"),
             (100, "Гений истории", "100 правильных ответов")
         ]
         for req, name, desc in quiz_milestones:
             all_achievements.append({"name": name, "desc": desc, "is_obtained": quiz_correct >= req})
 
         all_achievements.sort(key=lambda x: not x["is_obtained"])
-        
+
         return all_achievements
 
-    def get_streak_days(self): return self.data.get("streak_days", 0)
+    def get_streak_days(self):
+        return self.data.get("streak_days", 0)
 
     def add_note(self, fact_id, note_text):
-        if note_text and note_text.strip(): self.data["notes"][str(fact_id)] = note_text.strip()
+        if note_text and note_text.strip():
+            self.data["notes"][str(fact_id)] = note_text.strip()
         else:
-            if str(fact_id) in self.data["notes"]: del self.data["notes"][str(fact_id)]
+            if str(fact_id) in self.data["notes"]:
+                del self.data["notes"][str(fact_id)]
         self.save_data()
         return True
 
-    def get_note(self, fact_id): return self.data["notes"].get(str(fact_id), "")
-    def has_note(self, fact_id): return str(fact_id) in self.data["notes"]
-    def get_all_notes(self): return self.data.get("notes", {}).copy()
+    def get_note(self, fact_id):
+        return self.data["notes"].get(str(fact_id), "")
+
+    def has_note(self, fact_id):
+        return str(fact_id) in self.data["notes"]
+
+    def get_all_notes(self):
+        return self.data.get("notes", {}).copy()
 
     def add_like(self, fact_id, tags):
-        if fact_id in self.data["disliked_facts"]: self.data["disliked_facts"].remove(fact_id)
+        if fact_id in self.data["disliked_facts"]:
+            self.data["disliked_facts"].remove(fact_id)
         if fact_id not in self.data["liked_facts"]:
             self.data["liked_facts"].append(fact_id)
-            for tag in tags: self.data["tag_scores"][tag] = self.data["tag_scores"].get(tag, 0) + 1
+            for tag in tags:
+                self.data["tag_scores"][tag] = self.data["tag_scores"].get(tag, 0) + 1
             self.save_data()
             return True
         return False
 
     def add_dislike(self, fact_id, tags):
-        if fact_id in self.data["liked_facts"]: self.data["liked_facts"].remove(fact_id)
+        if fact_id in self.data["liked_facts"]:
+            self.data["liked_facts"].remove(fact_id)
         if fact_id not in self.data["disliked_facts"]:
             self.data["disliked_facts"].append(fact_id)
-            for tag in tags: self.data["tag_scores"][tag] = self.data["tag_scores"].get(tag, 0) - 1
+            for tag in tags:
+                self.data["tag_scores"][tag] = self.data["tag_scores"].get(tag, 0) - 1
             self.save_data()
             return True
         return False
@@ -224,7 +242,8 @@ class UserPreferences:
     def remove_like(self, fact_id, tags):
         if fact_id in self.data["liked_facts"]:
             self.data["liked_facts"].remove(fact_id)
-            for tag in tags: self.data["tag_scores"][tag] = self.data["tag_scores"].get(tag, 0) - 1
+            for tag in tags:
+                self.data["tag_scores"][tag] = self.data["tag_scores"].get(tag, 0) - 1
             self.save_data()
             return True
         return False
@@ -232,13 +251,15 @@ class UserPreferences:
     def remove_dislike(self, fact_id, tags):
         if fact_id in self.data["disliked_facts"]:
             self.data["disliked_facts"].remove(fact_id)
-            for tag in tags: self.data["tag_scores"][tag] = self.data["tag_scores"].get(tag, 0) + 1
+            for tag in tags:
+                self.data["tag_scores"][tag] = self.data["tag_scores"].get(tag, 0) + 1
             self.save_data()
             return True
         return False
 
-    def get_tag_score(self, tag): return self.data["tag_scores"].get(tag, 0)
-    
+    def get_tag_score(self, tag):
+        return self.data["tag_scores"].get(tag, 0)
+
     def get_top_tags(self, limit=5):
         sorted_tags = sorted(self.data["tag_scores"].items(), key=lambda x: x[1], reverse=True)
         return sorted_tags[:limit]
@@ -253,14 +274,19 @@ class UserPreferences:
 
     def get_user_stats(self):
         return {
-            "total_views": self.data["total_views"], "liked_count": len(self.data["liked_facts"]),
-            "disliked_count": len(self.data["disliked_facts"]), "unique_facts_viewed": len(set(self.data["viewed_facts"])),
-            "top_tags": self.get_top_tags(5), "streak_days": self.get_streak_days()
+            "total_views": self.data["total_views"],
+            "liked_count": len(self.data["liked_facts"]),
+            "disliked_count": len(self.data["disliked_facts"]),
+            "unique_facts_viewed": len(set(self.data["viewed_facts"])),
+            "top_tags": self.get_top_tags(5),
+            "streak_days": self.get_streak_days()
         }
 
     def get_fact_status(self, fact_id):
-        if fact_id in self.data["liked_facts"]: return "liked"
-        elif fact_id in self.data["disliked_facts"]: return "disliked"
+        if fact_id in self.data["liked_facts"]:
+            return "liked"
+        elif fact_id in self.data["disliked_facts"]:
+            return "disliked"
         return "neutral"
 
     def clear_history(self):
