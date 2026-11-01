@@ -36,31 +36,26 @@ COLOR_BTN_BG = get_color_from_hex('#1E3024')
 
 
 class CircleWipeTransition(ShaderTransition):
-    u_cx = NumericProperty(0.5)
-    u_cy = NumericProperty(0.5)
-    u_res = ListProperty([1.0, 1.0])
+    cx = NumericProperty(0.5)
+    cy = NumericProperty(0.5)
 
     fs = '''
         $HEADER$
         uniform float t;
-        uniform float u_cx;
-        uniform float u_cy;
-        uniform vec2 u_res;
+        uniform float cx;
+        uniform float cy;
         uniform sampler2D tex_in;
         uniform sampler2D tex_out;
 
         void main(void) {
-            vec2 diff = tex_coord0 - vec2(u_cx, u_cy);
-            // Коррекция пропорций, чтобы круг был ровным на любом экране
-            diff.x *= u_res.x / u_res.y;
-
-            float dist = length(diff);
-            float radius = t * 2.0; // Радиус с запасом, чтобы накрыть весь экран
+            vec2 uv = tex_coord0;
+            float dist = distance(uv, vec2(cx, cy));
+            float radius = t * 2.5;
 
             if (dist < radius) {
-                gl_FragColor = texture2D(tex_in, tex_coord0);
+                gl_FragColor = texture2D(tex_in, uv);
             } else {
-                gl_FragColor = texture2D(tex_out, tex_coord0);
+                gl_FragColor = texture2D(tex_out, uv);
             }
         }
     '''
@@ -108,18 +103,11 @@ def show_all_viewed_popup():
 
 
 def go_to_screen(manager, screen_name, widget):
-    if hasattr(manager.transition, 'u_cx'):
+    if hasattr(manager.transition, 'cx'):
         wx, wy = widget.to_window(widget.center_x, widget.center_y)
-
-        # Инвертируем Y, так как в Kivy отсчет снизу, а в текстурах сверху
-        manager.transition.u_cx = wx / Window.width
-        manager.transition.u_cy = 1.0 - (wy / Window.height)
-        manager.transition.u_res = [float(Window.width), float(Window.height)]
-
-        # Микрозадержка, чтобы Kivy успел применить новые координаты к шейдеру
-        Clock.schedule_once(lambda dt: setattr(manager, 'current', screen_name), 0.01)
-    else:
-        manager.current = screen_name
+        manager.transition.cx = wx / Window.width
+        manager.transition.cy = wy / Window.height
+    manager.current = screen_name
 
 
 class WrapLayout(Layout):
@@ -1114,7 +1102,7 @@ class WarFactApp(App):
         self.user_prefs = UserPreferences()
 
         sm = ScreenManager()
-        sm.transition = CircleWipeTransition(duration=0.4)
+        sm.transition = CircleWipeTransition(duration=0.45)  # Скорость анимации (0.45 сек)
 
         sm.add_widget(SplashScreen(name='splash'))
         sm.add_widget(MainMenuScreen(name='main_menu'))
