@@ -8,16 +8,17 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
-from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
+from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.image import Image
 from kivy.uix.layout import Layout
 from kivy.core.window import Window
-from kivy.graphics import Color, RoundedRectangle, BorderImage, Line
+from kivy.graphics import Color, RoundedRectangle, BorderImage, Line, Rectangle
 from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
 from kivy.clock import Clock
+from kivy.animation import Animation
 from kivy.properties import NumericProperty, ReferenceListProperty
 
 from data import FACTS_DATABASE, get_facts_count, get_fact_by_id
@@ -75,8 +76,46 @@ def show_all_viewed_popup():
     popup.open()
 
 
+class BlackCurtain(FloatLayout):
+    """Чёрная шторка поверх всего приложения для плавных переходов"""
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.size_hint = (1, 1)
+        self.opacity = 0
+        self.disabled = True
+        with self.canvas:
+            self.bg_color = Color(0, 0, 0, 1)
+            self.rect = Rectangle(pos=self.pos, size=self.size)
+        self.bind(pos=self._update_rect, size=self._update_rect)
+
+    def _update_rect(self, instance, value):
+        self.rect.pos = instance.pos
+        self.rect.size = instance.size
+
+
 def go_to_screen(manager, screen_name, widget=None):
-    manager.current = screen_name
+    """
+    Переход с затуханием через чёрный экран:
+    1. Экран плавно гаснет в чёрный (0.2 сек)
+    2. Меняется текущий экран
+    3. Чёрный плавно растворяется (0.25 сек)
+    """
+    app = App.get_running_app()
+    if not hasattr(app, 'curtain') or app.curtain is None:
+        manager.current = screen_name
+        return
+
+    curtain = app.curtain
+    curtain.disabled = False
+    curtain.opacity = 0
+
+    def on_fade_in_complete(anim, widget):
+        manager.current = screen_name
+        Animation(opacity=0, duration=0.25).start(curtain)
+
+    anim_in = Animation(opacity=1, duration=0.2)
+    anim_in.bind(on_complete=on_fade_in_complete)
+    anim_in.start(curtain)
 
 
 class WrapLayout(Layout):
@@ -262,7 +301,7 @@ class SplashScreen(Screen):
         Clock.schedule_once(self.go_to_menu, 2.0)
 
     def go_to_menu(self, dt):
-        self.manager.current = 'main_menu'
+        go_to_screen(self.manager, 'main_menu')
 
 
 class MainMenuScreen(Screen):
@@ -1013,8 +1052,8 @@ class WarFactApp(App):
         self.user_prefs = UserPreferences()
 
         sm = ScreenManager()
-        sm.transition = FadeTransition(duration=0.3)
-        
+        sm.transition = NoTransition()
+
         sm.add_widget(SplashScreen(name='splash'))
         sm.add_widget(MainMenuScreen(name='main_menu'))
         sm.add_widget(FactScreen(name='fact_screen'))
@@ -1023,9 +1062,14 @@ class WarFactApp(App):
         sm.add_widget(StatsScreen(name='stats_screen'))
         sm.add_widget(SettingsScreen(name='settings_screen'))
         sm.add_widget(QuizScreen(name='quiz_screen'))
-        
+
+        root = FloatLayout()
+        root.add_widget(sm)
+        self.curtain = BlackCurtain()
+        root.add_widget(self.curtain)
+
         sm.current = 'splash'
-        return sm
+        return root
 
 
 if __name__ == '__main__':
